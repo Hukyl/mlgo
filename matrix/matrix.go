@@ -25,6 +25,7 @@ type Matrix[T utils.Number] interface {
 
 	At(int, int) (T, error)
 	Set(int, int, T) error
+	Clip(T, T) Matrix[T]
 
 	Add(Matrix[T]) (Matrix[T], error)
 	AddScalar(T) Matrix[T]
@@ -127,6 +128,22 @@ func (m1 *matrix[T]) Set(i, j int, value T) error {
 	}
 	m1.data[i][j] = value
 	return nil
+}
+
+func (m *matrix[T]) Clip(lower, upper T) Matrix[T] {
+	result := m.DeepCopy()
+	for i := 0; i < m.RowCount(); i++ {
+		for j := 0; j < m.ColumnCount(); j++ {
+			v, _ := result.At(i, j)
+			if v < lower {
+				v = lower
+			} else if v > upper {
+				v = upper
+			}
+			result.Set(i, j, v)
+		}
+	}
+	return result
 }
 
 /************************************************************************/

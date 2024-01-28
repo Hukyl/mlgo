@@ -7,10 +7,28 @@ import (
 	"github.com/Hukyl/mlgo/utils"
 )
 
+const clipValue = 1e-5
+
 type CategoricalCrossEntropyLoss[T utils.Float] struct{}
 
 func (l CategoricalCrossEntropyLoss[T]) Apply(y, yHat T) T {
 	return -y * T(math.Log(float64(yHat)))
+}
+
+func (l CategoricalCrossEntropyLoss[T]) ApplyMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T] {
+	result := matrix.NewZeroMatrix[T](1, y.ColumnCount())
+	for j := 0; j < y.ColumnCount(); j++ {
+		sum := T(0)
+
+		for i := 0; i < y.RowCount(); i++ {
+			yValue, _ := y.At(i, j)
+			yHatValue, _ := yHat.At(i, j)
+			sum += -yValue * T(math.Log(float64(yHatValue)))
+		}
+
+		result.Set(0, j, sum)
+	}
+	return result
 }
 
 func (l CategoricalCrossEntropyLoss[T]) ApplyDerivative(y, yHat T) T {
@@ -18,9 +36,10 @@ func (l CategoricalCrossEntropyLoss[T]) ApplyDerivative(y, yHat T) T {
 }
 
 func (l CategoricalCrossEntropyLoss[T]) ApplyDerivativeMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T] {
+	yClipped := y.Clip(clipValue, 1-clipValue)
 	denominator := yHat.MultiplyByScalar(-1)
 	matrix.ApplyByElement(denominator, func(x T) T { return 1 / x })
-	result, _ := y.MultiplyElementwise(denominator)
+	result, _ := yClipped.MultiplyElementwise(denominator)
 	return result
 }
 
@@ -38,7 +57,7 @@ type CCELossWithSoftmax[T utils.Float] struct {
 }
 
 func (l CCELossWithSoftmax[T]) ApplyDerivativeMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T] {
-	result, _ := yHat.Add(y.MultiplyByScalar(-1))
+	result, _ := yHat.Add(y.Clip(clipValue, 1-clipValue).MultiplyByScalar(-1))
 	return result
 }
 

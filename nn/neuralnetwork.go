@@ -106,17 +106,15 @@ func (n *nn) backPropagate(Y matrix.Matrix[float64], inputCache []matrix.Matrix[
 
 func (n *nn) computeCost(yHat, Y matrix.Matrix[float64]) float64 {
 	cost := float64(0)
-	for column := 0; column < yHat.ColumnCount(); column++ {
-		for row := 0; row < yHat.RowCount(); row++ {
-			y, _ := Y.At(row, column)
-			y_hat, _ := yHat.At(row, column)
-			value := n.LossFunction.Apply(y, y_hat)
-			if !(math.IsInf(value, 0) || math.IsNaN(value)) {
-				cost += value
-			}
+
+	losses := n.LossFunction.ApplyMatrix(Y, yHat)
+	for column := 0; column < losses.ColumnCount(); column++ {
+		for row := 0; row < losses.RowCount(); row++ {
+			v, _ := losses.At(column, row)
+			cost += v
 		}
 	}
-	return cost / float64(Y.ColumnCount())
+	return cost / float64(losses.ColumnCount())
 }
 
 func (n *nn) updateWeights(inputCache []matrix.Matrix[float64], backPropagationCache [][2]matrix.Matrix[float64], learningRate float64) {

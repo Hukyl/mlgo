@@ -9,6 +9,8 @@ import (
 
 type LossFunction[T utils.Float] interface {
 	Apply(y T, yHat T) T
+	ApplyMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T]
+
 	ApplyDerivative(y T, yHat T) T
 	ApplyDerivativeMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T]
 }

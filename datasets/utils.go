@@ -70,10 +70,11 @@ func readAndBatchCSV(filename string, batchSize int) ([][]float64, [][][]float64
 func translateToMatrix(labels [][]float64, data [][][]float64) ([]matrix.Matrix[float64], []matrix.Matrix[float64]) {
 	matrixLabels := make([]matrix.Matrix[float64], 0, len(labels))
 	for _, labelBatch := range labels {
-		batchMatrix := matrix.NewOnesMatrix(10, len(labelBatch))
-		batchMatrix = batchMatrix.MultiplyByScalar(0.001)
+		batchMatrix := matrix.NewZeroMatrix[float64](10, len(labelBatch))
+		// batchMatrix := matrix.NewOnesMatrix(10, len(labelBatch))
+		// batchMatrix = batchMatrix.MultiplyByScalar(0.001)
 		for j, label := range labelBatch {
-			batchMatrix.Set(int(label), j, 0.991)
+			batchMatrix.Set(int(label), j, 1)
 		}
 		matrixLabels = append(matrixLabels, batchMatrix)
 	}
