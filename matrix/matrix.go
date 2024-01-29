@@ -26,7 +26,6 @@ type Matrix[T utils.Number] interface {
 
 	At(int, int) (T, error)
 	Set(int, int, T) error
-	Clip(T, T) Matrix[T]
 
 	Add(Matrix[T]) (Matrix[T], error)
 	AddScalar(T) Matrix[T]
@@ -131,30 +130,6 @@ func (m1 *matrix[T]) Set(i, j int, value T) error {
 	return nil
 }
 
-func (m *matrix[T]) Clip(lower, upper T) Matrix[T] {
-	result := m.DeepCopy()
-
-	wg := sync.WaitGroup{}
-	wg.Add(result.ColumnCount())
-	for j := 0; j < m.ColumnCount(); j++ {
-		go func(j int) {
-			defer wg.Done()
-			for i := 0; i < m.RowCount(); i++ {
-				v, _ := result.At(i, j)
-				if v < lower {
-					v = lower
-				} else if v > upper {
-					v = upper
-				}
-				result.Set(i, j, v)
-			}
-		}(j)
-	}
-	wg.Wait()
-
-	return result
-}
-
 /************************************************************************/
 
 func (m1 *matrix[T]) Add(m2 Matrix[T]) (Matrix[T], error) {
@@ -224,17 +199,6 @@ func (m1 *matrix[T]) Multiply(m2 Matrix[T]) (Matrix[T], error) {
 	}
 	wg.Wait()
 
-	// for m1Row := 0; m1Row < m1.RowCount(); m1Row++ {
-	// 	for m2Column := 0; m2Column < otherSize[1]; m2Column++ {
-	// 		value := T(0)
-	// 		for k := 0; k < m1.ColumnCount(); k++ {
-	// 			m1Value, _ := m1.At(m1Row, k)
-	// 			m2Value, _ := m2.At(k, m2Column)
-	// 			value += m1Value * m2Value
-	// 		}
-	// 		m3.Set(m1Row, m2Column, value)
-	// 	}
-	// }
 	return m3, nil
 }
 

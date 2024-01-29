@@ -36,7 +36,7 @@ func (l CategoricalCrossEntropyLoss[T]) ApplyDerivative(y, yHat T) T {
 }
 
 func (l CategoricalCrossEntropyLoss[T]) ApplyDerivativeMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T] {
-	yClipped := y.Clip(clipValue, 1-clipValue)
+	yClipped := matrix.Clip(y, clipValue, 1-clipValue)
 	denominator := yHat.MultiplyByScalar(-1)
 	matrix.ApplyByElement(denominator, func(x T) T { return 1 / x })
 	result, _ := yClipped.MultiplyElementwise(denominator)
@@ -57,7 +57,7 @@ type CCELossWithSoftmax[T utils.Float] struct {
 }
 
 func (l CCELossWithSoftmax[T]) ApplyDerivativeMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T] {
-	result, _ := yHat.Add(y.Clip(clipValue, 1-clipValue).MultiplyByScalar(-1))
+	result, _ := yHat.Add(matrix.Clip(y, clipValue, 1-clipValue).MultiplyByScalar(-1))
 	return result
 }
 
