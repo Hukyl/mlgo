@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"sync"
 
 	"github.com/Hukyl/mlgo/utils"
 )
@@ -132,17 +133,25 @@ func (m1 *matrix[T]) Set(i, j int, value T) error {
 
 func (m *matrix[T]) Clip(lower, upper T) Matrix[T] {
 	result := m.DeepCopy()
-	for i := 0; i < m.RowCount(); i++ {
-		for j := 0; j < m.ColumnCount(); j++ {
-			v, _ := result.At(i, j)
-			if v < lower {
-				v = lower
-			} else if v > upper {
-				v = upper
+
+	wg := sync.WaitGroup{}
+	wg.Add(result.ColumnCount())
+	for j := 0; j < m.ColumnCount(); j++ {
+		go func(j int) {
+			defer wg.Done()
+			for i := 0; i < m.RowCount(); i++ {
+				v, _ := result.At(i, j)
+				if v < lower {
+					v = lower
+				} else if v > upper {
+					v = upper
+				}
+				result.Set(i, j, v)
 			}
-			result.Set(i, j, v)
-		}
+		}(j)
 	}
+	wg.Wait()
+
 	return result
 }
 
@@ -153,24 +162,40 @@ func (m1 *matrix[T]) Add(m2 Matrix[T]) (Matrix[T], error) {
 		return nil, errors.New("matrices are not the same size")
 	}
 	m3 := NewZeroMatrix[T](m1.RowCount(), m1.ColumnCount())
-	for i := 0; i < m1.RowCount(); i++ {
-		for j := 0; j < m1.ColumnCount(); j++ {
-			m1ItemValue, _ := m1.At(i, j)
-			m2ItemValue, _ := m2.At(i, j)
-			m3.Set(i, j, m1ItemValue+m2ItemValue)
-		}
+
+	wg := sync.WaitGroup{}
+	wg.Add(m3.ColumnCount())
+	for j := 0; j < m3.ColumnCount(); j++ {
+		go func(j int) {
+			defer wg.Done()
+			for i := 0; i < m3.RowCount(); i++ {
+				m1ItemValue, _ := m1.At(i, j)
+				m2ItemValue, _ := m2.At(i, j)
+				m3.Set(i, j, m1ItemValue+m2ItemValue)
+			}
+		}(j)
 	}
+	wg.Wait()
+
 	return m3, nil
 }
 
 func (m1 *matrix[T]) AddScalar(k T) Matrix[T] {
 	m3 := NewZeroMatrix[T](m1.RowCount(), m1.ColumnCount())
-	for i := 0; i < m1.RowCount(); i++ {
-		for j := 0; j < m1.ColumnCount(); j++ {
-			item, _ := m1.At(i, j)
-			m3.Set(i, j, item+k)
-		}
+
+	wg := sync.WaitGroup{}
+	wg.Add(m3.ColumnCount())
+	for j := 0; j < m3.ColumnCount(); j++ {
+		go func(j int) {
+			defer wg.Done()
+			for i := 0; i < m3.RowCount(); i++ {
+				item, _ := m1.At(i, j)
+				m3.Set(i, j, item+k)
+			}
+		}(j)
 	}
+	wg.Wait()
+
 	return m3
 }
 
@@ -180,28 +205,55 @@ func (m1 *matrix[T]) Multiply(m2 Matrix[T]) (Matrix[T], error) {
 		return nil, errors.New("matrices are not conformable under multiplication")
 	}
 	m3 := NewZeroMatrix[T](m1.RowCount(), otherSize[1])
-	for m1Row := 0; m1Row < m1.RowCount(); m1Row++ {
-		for m2Column := 0; m2Column < otherSize[1]; m2Column++ {
-			value := T(0)
-			for k := 0; k < m1.ColumnCount(); k++ {
-				m1Value, _ := m1.At(m1Row, k)
-				m2Value, _ := m2.At(k, m2Column)
-				value += m1Value * m2Value
+
+	wg := sync.WaitGroup{}
+	wg.Add(m3.ColumnCount())
+	for j := 0; j < m3.ColumnCount(); j++ {
+		go func(j int) {
+			defer wg.Done()
+			for i := 0; i < m3.RowCount(); i++ {
+				value := T(0)
+				for k := 0; k < m1.ColumnCount(); k++ {
+					m1Value, _ := m1.At(i, k)
+					m2Value, _ := m2.At(k, j)
+					value += m1Value * m2Value
+				}
+				m3.Set(i, j, value)
 			}
-			m3.Set(m1Row, m2Column, value)
-		}
+		}(j)
 	}
+	wg.Wait()
+
+	// for m1Row := 0; m1Row < m1.RowCount(); m1Row++ {
+	// 	for m2Column := 0; m2Column < otherSize[1]; m2Column++ {
+	// 		value := T(0)
+	// 		for k := 0; k < m1.ColumnCount(); k++ {
+	// 			m1Value, _ := m1.At(m1Row, k)
+	// 			m2Value, _ := m2.At(k, m2Column)
+	// 			value += m1Value * m2Value
+	// 		}
+	// 		m3.Set(m1Row, m2Column, value)
+	// 	}
+	// }
 	return m3, nil
 }
 
 func (m1 *matrix[T]) MultiplyByScalar(k T) Matrix[T] {
 	m3 := NewZeroMatrix[T](m1.RowCount(), m1.ColumnCount())
-	for i := 0; i < m1.RowCount(); i++ {
-		for j := 0; j < m1.ColumnCount(); j++ {
-			item, _ := m1.At(i, j)
-			m3.Set(i, j, item*k)
-		}
+
+	wg := sync.WaitGroup{}
+	wg.Add(m3.ColumnCount())
+	for j := 0; j < m3.ColumnCount(); j++ {
+		go func(j int) {
+			defer wg.Done()
+			for i := 0; i < m3.RowCount(); i++ {
+				item, _ := m1.At(i, j)
+				m3.Set(i, j, item*k)
+			}
+		}(j)
 	}
+	wg.Wait()
+
 	return m3
 }
 
@@ -210,13 +262,21 @@ func (m1 *matrix[T]) MultiplyElementwise(m2 Matrix[T]) (Matrix[T], error) {
 		return nil, errors.New("matrices are not the same size")
 	}
 	m3 := NewZeroMatrix[T](m1.RowCount(), m1.ColumnCount())
-	for i := 0; i < m1.RowCount(); i++ {
-		for j := 0; j < m1.ColumnCount(); j++ {
-			m1Value, _ := m1.At(i, j)
-			m2Value, _ := m2.At(i, j)
-			m3.Set(i, j, m1Value*m2Value)
-		}
+
+	wg := sync.WaitGroup{}
+	wg.Add(m3.ColumnCount())
+	for j := 0; j < m3.ColumnCount(); j++ {
+		go func(j int) {
+			defer wg.Done()
+			for i := 0; i < m3.RowCount(); i++ {
+				m1Value, _ := m1.At(i, j)
+				m2Value, _ := m2.At(i, j)
+				m3.Set(i, j, m1Value*m2Value)
+			}
+		}(j)
 	}
+	wg.Wait()
+
 	return m3, nil
 }
 
@@ -224,12 +284,20 @@ func (m1 *matrix[T]) MultiplyElementwise(m2 Matrix[T]) (Matrix[T], error) {
 
 func (m *matrix[T]) T() Matrix[T] {
 	result := NewZeroMatrix[T](m.ColumnCount(), m.RowCount())
-	for i := 0; i < m.RowCount(); i++ {
-		for j := 0; j < m.ColumnCount(); j++ {
-			item, _ := m.At(i, j)
-			result.Set(j, i, item)
-		}
+
+	wg := sync.WaitGroup{}
+	wg.Add(m.ColumnCount())
+	for j := 0; j < m.ColumnCount(); j++ {
+		go func(j int) {
+			defer wg.Done()
+			for i := 0; i < m.RowCount(); i++ {
+				item, _ := m.At(i, j)
+				result.Set(j, i, item)
+			}
+		}(j)
 	}
+	wg.Wait()
+
 	return result
 }
 
@@ -322,12 +390,20 @@ func (m matrix[T]) Copy() Matrix[T] {
 
 func (m matrix[T]) DeepCopy() Matrix[T] {
 	result := NewZeroMatrix[T](m.RowCount(), m.ColumnCount())
-	for i := 0; i < m.RowCount(); i++ {
-		for j := 0; j < m.ColumnCount(); j++ {
-			item, _ := m.At(i, j)
-			result.Set(i, j, item)
-		}
+
+	wg := sync.WaitGroup{}
+	wg.Add(result.ColumnCount())
+	for j := 0; j < m.ColumnCount(); j++ {
+		go func(j int) {
+			defer wg.Done()
+			for i := 0; i < m.RowCount(); i++ {
+				item, _ := m.At(i, j)
+				result.Set(i, j, item)
+			}
+		}(j)
 	}
+	wg.Wait()
+
 	return result
 }
 
