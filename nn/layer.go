@@ -23,7 +23,7 @@ type Layer interface {
 
 	ForwardPropagate(X matrix.Matrix[float64]) (Y matrix.Matrix[float64], err error)
 	BackPropagate(nextLayerPropagation, output matrix.Matrix[float64]) [2]matrix.Matrix[float64]
-	UpdateWeights(nextLayerPropagation, input matrix.Matrix[float64], learningRate float64)
+	UpdateWeights(nextLayerPropagation, input matrix.Matrix[float64], parameters NeuralNetworkParameters)
 }
 
 /************************************************************************/
@@ -119,13 +119,21 @@ func (l *layer) BackPropagate(nextLayerPropagation, A matrix.Matrix[float64]) [2
 //
 // Method is based on that for each next layer, derivative is going to be based on the next layer's
 // backpropagation derivative.
-func (l *layer) UpdateWeights(dAdZ, input matrix.Matrix[float64], learningRate float64) {
+func (l *layer) UpdateWeights(dAdZ, input matrix.Matrix[float64], parameters NeuralNetworkParameters) {
 	db, _ := dAdZ.Multiply(matrix.NewOnesMatrix(input.ColumnCount(), 1))
 	dW, _ := dAdZ.Multiply(input.T())
 
 	columns := float64(input.ColumnCount())
-	l.weights, _ = l.Weights().Add(dW.MultiplyByScalar(-learningRate / columns))
-	l.bias, _ = l.Bias().Add(db.MultiplyByScalar(-learningRate / columns))
+
+	decayed_dW, _ := dW.MultiplyByScalar(1 / columns).Add(
+		l.weights.MultiplyByScalar(parameters.WeightDecay),
+	)
+	l.weights, _ = l.Weights().Add(decayed_dW.MultiplyByScalar(-parameters.LearningRate))
+
+	decayed_db, _ := db.MultiplyByScalar(1 / columns).Add(
+		l.bias.MultiplyByScalar(parameters.WeightDecay),
+	)
+	l.bias, _ = l.Bias().Add(decayed_db.MultiplyByScalar(-parameters.LearningRate))
 }
 
 /************************************************************************/

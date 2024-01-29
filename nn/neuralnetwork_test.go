@@ -38,16 +38,21 @@ func TestTrain(t *testing.T) {
 	TrainX = TrainX.T()
 	TrainY, _ := matrix.NewMatrix([][]float64{{2, 2, 4.5, 4, 8, 20}})
 
-	nn := nn.NewRandomNeuralNetwork(
+	model := nn.NewRandomNeuralNetwork(
 		[]int{2, 1},
 		[]activation.ActivationFunction{activation.Linear{}},
 		loss.SquareLoss[float64]{},
 	)
-	nn.Train(TrainX, TrainY, 100_000, 0.0005)
+	parameters := nn.NeuralNetworkParameters{
+		LearningRate:   0.0005,
+		WeightDecay:    0,
+		IterationCount: 100_000,
+	}
+	model.Train(TrainX, TrainY, parameters)
 
 	X, _ := matrix.NewMatrix([][]float64{{6, 1}})
 	X = X.T()
-	got := nn.Predict(X)
+	got := model.Predict(X)
 
 	want, _ := matrix.NewMatrix([][]float64{{9.77306421}})
 	if !relativelyEqual(got, want) {

@@ -21,8 +21,19 @@ type NeuralNetwork interface {
 	InputSize() [2]int
 	OutputSize() [2]int
 
+	// Training functions
+	ComputeCost(yHat, Y matrix.Matrix[float64]) float64
+	ForwardPropagate(X matrix.Matrix[float64]) []matrix.Matrix[float64]
+	BackPropagate(Y matrix.Matrix[float64], inputCache []matrix.Matrix[float64]) [][2]matrix.Matrix[float64]
+	UpdateWeights(
+		inputCache []matrix.Matrix[float64],
+		backPropagationCache [][2]matrix.Matrix[float64],
+		parameters NeuralNetworkParameters,
+	)
+
+	// Prediction functions
 	Predict(X matrix.Matrix[float64]) (Y matrix.Matrix[float64])
-	Train(X matrix.Matrix[float64], Y matrix.Matrix[float64], numIterations int, learningRate float64) error
+	Train(X matrix.Matrix[float64], Y matrix.Matrix[float64], parameters NeuralNetworkParameters) error
 }
 
 /************************************************************************/
@@ -68,7 +79,7 @@ func (n *nn) validateTrainSamples(X, Y matrix.Matrix[float64]) error {
 //
 // Returns slice, with size of (N layers)+1, where [0] is the input to the network,
 // and each element is the result of propagation through the next layer.
-func (n *nn) forwardPropagate(X matrix.Matrix[float64]) []matrix.Matrix[float64] {
+func (n *nn) ForwardPropagate(X matrix.Matrix[float64]) []matrix.Matrix[float64] {
 	inputCache := make([]matrix.Matrix[float64], len(n.layers)+1)
 	inputCache[0] = X
 
@@ -88,7 +99,7 @@ func (n *nn) forwardPropagate(X matrix.Matrix[float64]) []matrix.Matrix[float64]
 //	L1 -> dL/dZ1 = dL/dA3 * dA3/dZ3 * dZ3/dA2 * dA2/dZ2 * dZ2/dA1 * dA1/dZ1
 //	L2 -> dL/dZ2 = dL/dA3 * dA3/dZ3 * dZ3/dA2 * dA2/dZ2
 //	L3 -> dL/dZ3 = dL/dA3 * dA3/dZ3
-func (n *nn) backPropagate(Y matrix.Matrix[float64], inputCache []matrix.Matrix[float64]) [][2]matrix.Matrix[float64] {
+func (n *nn) BackPropagate(Y matrix.Matrix[float64], inputCache []matrix.Matrix[float64]) [][2]matrix.Matrix[float64] {
 	layerCount := len(n.layers)
 	backPropagationCache := make([][2]matrix.Matrix[float64], layerCount+1)
 
@@ -104,7 +115,7 @@ func (n *nn) backPropagate(Y matrix.Matrix[float64], inputCache []matrix.Matrix[
 	return backPropagationCache
 }
 
-func (n *nn) computeCost(yHat, Y matrix.Matrix[float64]) float64 {
+func (n *nn) ComputeCost(yHat, Y matrix.Matrix[float64]) float64 {
 	cost := float64(0)
 
 	losses := n.LossFunction.ApplyMatrix(Y, yHat)
@@ -117,35 +128,36 @@ func (n *nn) computeCost(yHat, Y matrix.Matrix[float64]) float64 {
 	return cost / float64(losses.ColumnCount())
 }
 
-func (n *nn) updateWeights(inputCache []matrix.Matrix[float64], backPropagationCache [][2]matrix.Matrix[float64], learningRate float64) {
+func (n *nn) UpdateWeights(inputCache []matrix.Matrix[float64], backPropagationCache [][2]matrix.Matrix[float64], parameters NeuralNetworkParameters) {
 	for j, layer := range n.layers {
-		layer.UpdateWeights(backPropagationCache[j][0], inputCache[j], learningRate)
+		layer.UpdateWeights(backPropagationCache[j][0], inputCache[j], parameters)
 	}
 }
 
-func (n *nn) Train(X matrix.Matrix[float64], Y matrix.Matrix[float64], numIterations int, learningRate float64) error {
+func (n *nn) Train(X matrix.Matrix[float64], Y matrix.Matrix[float64], parameters NeuralNetworkParameters) error {
 	err := n.validateTrainSamples(X, Y)
 	if err != nil {
 		return err
 	}
+	validateParameters(&parameters)
 
-	tenthIteration := float64(numIterations) / 10.0
+	tenthIteration := float64(parameters.IterationCount) / 10.0
 
-	for i := 1; i <= numIterations; i++ {
+	for i := 1; i <= int(parameters.IterationCount); i++ {
 		// Forward propagate and store inputs
-		inputCache := n.forwardPropagate(X)
+		inputCache := n.ForwardPropagate(X)
 
 		// Print cost
 		if i == 1 || math.Mod(float64(i), tenthIteration) == 0.0 {
-			cost := n.computeCost(inputCache[len(inputCache)-1], Y)
+			cost := n.ComputeCost(inputCache[len(inputCache)-1], Y)
 			log.Printf("Cost after %d iter: %v\n", i, cost)
 		}
 
 		// Backpropagation to fill the derivatives
-		backPropagationCache := n.backPropagate(Y, inputCache)
+		backPropagationCache := n.BackPropagate(Y, inputCache)
 
 		// Update parameters
-		n.updateWeights(inputCache, backPropagationCache, learningRate)
+		n.UpdateWeights(inputCache, backPropagationCache, parameters)
 	}
 	return nil
 }

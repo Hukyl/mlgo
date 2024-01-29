@@ -7,7 +7,7 @@ import (
 	"github.com/Hukyl/mlgo/utils"
 )
 
-const clipValue = 1e-5
+const clipValue = 1e-7
 
 type CategoricalCrossEntropyLoss[T utils.Float] struct{}
 
