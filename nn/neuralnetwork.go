@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -33,7 +33,7 @@ type NeuralNetwork interface {
 
 	// Prediction functions
 	Predict(X matrix.Matrix[float64]) (Y matrix.Matrix[float64])
-	Train(X matrix.Matrix[float64], Y matrix.Matrix[float64], parameters NeuralNetworkParameters) error
+	Train(X, Y []matrix.Matrix[float64], parameters NeuralNetworkParameters) error
 }
 
 /************************************************************************/
@@ -59,18 +59,22 @@ func (n *nn) Predict(X matrix.Matrix[float64]) matrix.Matrix[float64] {
 	return Y
 }
 
-func (n *nn) validateTrainSamples(X, Y matrix.Matrix[float64]) error {
+func (n *nn) validateTrainSamples(X, Y []matrix.Matrix[float64]) error {
 	var errorText string
-	switch {
-	case X.RowCount() != n.InputSize()[0]:
-		errorText = "invalid input size"
-	case Y.RowCount() != n.OutputSize()[0]:
-		errorText = "invalid output size"
-	case X.ColumnCount() != Y.ColumnCount():
-		errorText = "incosistent sample count"
-	}
-	if len(errorText) > 0 {
-		return errors.New(errorText)
+
+	for i := 0; i < len(X); i++ {
+		X_batch, Y_batch := X[i], Y[i]
+		switch {
+		case X_batch.RowCount() != n.InputSize()[0]:
+			errorText = "invalid input size"
+		case Y_batch.RowCount() != n.OutputSize()[0]:
+			errorText = "invalid output size"
+		case X_batch.ColumnCount() != Y_batch.ColumnCount():
+			errorText = "incosistent sample count"
+		}
+		if len(errorText) > 0 {
+			return errors.New(errorText)
+		}
 	}
 	return nil
 }
@@ -134,31 +138,47 @@ func (n *nn) UpdateWeights(inputCache []matrix.Matrix[float64], backPropagationC
 	}
 }
 
-func (n *nn) Train(X matrix.Matrix[float64], Y matrix.Matrix[float64], parameters NeuralNetworkParameters) error {
+func (n *nn) Train(X, Y []matrix.Matrix[float64], parameters NeuralNetworkParameters) error {
 	err := n.validateTrainSamples(X, Y)
 	if err != nil {
 		return err
 	}
 	validateParameters(&parameters)
 
-	tenthIteration := float64(parameters.IterationCount) / 10.0
+	parameters.currentEpoch = 0
 
-	for i := 1; i <= int(parameters.IterationCount); i++ {
-		// Forward propagate and store inputs
-		inputCache := n.ForwardPropagate(X)
+	DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, "start.json"))
+	for e := 0; e < int(parameters.EpochCount); e++ {
+		log.Printf("Epoch %d out of %d\n", e+1, parameters.EpochCount)
 
-		// Print cost
-		if i == 1 || math.Mod(float64(i), tenthIteration) == 0.0 {
-			cost := n.ComputeCost(inputCache[len(inputCache)-1], Y)
-			log.Printf("Cost after %d iter: %v\n", i, cost)
+		for i := 0; i < len(X); i++ {
+			X_batch, Y_batch := X[i], Y[i]
+
+			// Forward propagate and store inputs
+			inputCache := n.ForwardPropagate(X_batch)
+
+			cost := n.ComputeCost(inputCache[len(inputCache)-1], Y_batch)
+			log.Printf("Cost after %d iter: %v\n", i+1, cost)
+
+			// Backpropagation to fill the derivatives
+			backPropagationCache := n.BackPropagate(Y_batch, inputCache)
+
+			// Update parameters
+			n.UpdateWeights(inputCache, backPropagationCache, parameters)
 		}
 
-		// Backpropagation to fill the derivatives
-		backPropagationCache := n.BackPropagate(Y, inputCache)
+		parameters.currentEpoch++
 
-		// Update parameters
-		n.UpdateWeights(inputCache, backPropagationCache, parameters)
+		log.Printf(
+			"Accuracy: %v\n",
+			parameters.AccuracyMetric(n.Predict(X[0]), Y[0]),
+		)
+		DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, fmt.Sprintf("epoch_%d.json", e+1)))
 	}
+	DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, "finish.json"))
+
+	parameters.currentEpoch = 0
+
 	return nil
 }
 

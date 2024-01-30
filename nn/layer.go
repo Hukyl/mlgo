@@ -128,12 +128,12 @@ func (l *layer) UpdateWeights(dAdZ, input matrix.Matrix[float64], parameters Neu
 	decayed_dW, _ := dW.MultiplyByScalar(1 / columns).Add(
 		l.weights.MultiplyByScalar(parameters.WeightDecay),
 	)
-	l.weights, _ = l.Weights().Add(decayed_dW.MultiplyByScalar(-parameters.LearningRate))
+	l.weights, _ = l.Weights().Add(decayed_dW.MultiplyByScalar(-parameters.LearningRate()))
 
 	decayed_db, _ := db.MultiplyByScalar(1 / columns).Add(
 		l.bias.MultiplyByScalar(parameters.WeightDecay),
 	)
-	l.bias, _ = l.Bias().Add(decayed_db.MultiplyByScalar(-parameters.LearningRate))
+	l.bias, _ = l.Bias().Add(decayed_db.MultiplyByScalar(-parameters.LearningRate()))
 }
 
 /************************************************************************/

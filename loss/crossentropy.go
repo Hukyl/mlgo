@@ -57,7 +57,7 @@ type CCELossWithSoftmax[T utils.Float] struct {
 }
 
 func (l CCELossWithSoftmax[T]) ApplyDerivativeMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T] {
-	result, _ := yHat.Add(matrix.Clip(y, clipValue, 1-clipValue).MultiplyByScalar(-1))
+	result, _ := yHat.Add(y.MultiplyByScalar(-1))
 	return result
 }
 
