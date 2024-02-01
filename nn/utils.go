@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"math"
-	"math/rand"
 	"os"
 
 	"github.com/Hukyl/mlgo/activation"
@@ -56,10 +54,15 @@ func NewNeuralNetwork(layers []Layer, lossFunction loss.LossFunction[float64]) N
 	return &nn{layers: layers, LossFunction: lossFunction}
 }
 
-func NewRandomNeuralNetwork(inputSize []int, activationFunctions []activation.ActivationFunction, lossFunction loss.LossFunction[float64]) NeuralNetwork {
+func NewRandomNeuralNetwork(
+	inputSize []int,
+	activationFunctions []activation.ActivationFunction,
+	lossFunction loss.LossFunction[float64],
+	wi WeightInitialization,
+) NeuralNetwork {
 	layers := make([]Layer, 0, len(inputSize)-1)
 	for j := 1; j < len(inputSize); j++ {
-		layer := NewRandomizedLayer([2]int{inputSize[j], inputSize[j-1]}, activationFunctions[j-1])
+		layer := NewRandomizedLayer([2]int{inputSize[j], inputSize[j-1]}, activationFunctions[j-1], wi)
 		layers = append(layers, layer)
 	}
 	return &nn{layers: layers, LossFunction: lossFunction}
@@ -75,13 +78,11 @@ func NewLayer(W, b matrix.Matrix[float64], a activation.ActivationFunction) (Lay
 	return l, nil
 }
 
-func NewRandomizedLayer(weightSize [2]int, a activation.ActivationFunction) Layer {
+func NewRandomizedLayer(weightSize [2]int, a activation.ActivationFunction, wi WeightInitialization) Layer {
 	W := matrix.NewZeroMatrix[float64](weightSize[0], weightSize[1])
 	for i := 0; i < weightSize[0]; i++ {
 		for j := 0; j < weightSize[1]; j++ {
-			// Using He initialization method
-			v := rand.NormFloat64() * math.Sqrt(float64(2)/float64(weightSize[1]))
-			W.Set(i, j, v)
+			W.Set(i, j, wi.Generate(weightSize))
 		}
 	}
 	b := matrix.NewZeroMatrix[float64](weightSize[0], 1)
