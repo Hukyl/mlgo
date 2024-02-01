@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 
@@ -78,7 +79,9 @@ func NewRandomizedLayer(weightSize [2]int, a activation.ActivationFunction) Laye
 	W := matrix.NewZeroMatrix[float64](weightSize[0], weightSize[1])
 	for i := 0; i < weightSize[0]; i++ {
 		for j := 0; j < weightSize[1]; j++ {
-			W.Set(i, j, rand.Float64()-0.5)
+			// Using He initialization method
+			v := rand.NormFloat64() * math.Sqrt(float64(2)/float64(weightSize[1]))
+			W.Set(i, j, v)
 		}
 	}
 	b := matrix.NewZeroMatrix[float64](weightSize[0], 1)
