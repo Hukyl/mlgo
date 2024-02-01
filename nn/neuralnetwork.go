@@ -171,7 +171,7 @@ func (n *nn) Train(X, Y []matrix.Matrix[float64], parameters NeuralNetworkParame
 
 		log.Printf(
 			"Accuracy: %v\n",
-			parameters.AccuracyMetric(n.Predict(X[0]), Y[0]),
+			parameters.AccuracyMetric.Calculate(Y[0], n.Predict(X[0])),
 		)
 		DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, fmt.Sprintf("epoch_%d.json", e+1)))
 	}

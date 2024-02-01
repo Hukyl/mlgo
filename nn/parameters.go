@@ -1,7 +1,7 @@
 package nn
 
 import (
-	"github.com/Hukyl/mlgo/matrix"
+	"github.com/Hukyl/mlgo/metric"
 )
 
 const defaultEpochCount = 5
@@ -16,7 +16,7 @@ type NeuralNetworkParameters struct {
 	InitialLearningRate float64
 	WeightDecay         float64
 
-	AccuracyMetric func(yHat, y matrix.Matrix[float64]) float64
+	AccuracyMetric metric.Metric
 
 	DumpPath string
 }
