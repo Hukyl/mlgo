@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -149,16 +150,11 @@ func (n *nn) Train(X, Y []matrix.Matrix[float64], parameters NeuralNetworkParame
 
 	DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, "start.json"))
 	for e := 0; e < int(parameters.EpochCount); e++ {
-		log.Printf("Epoch %d out of %d\n", e+1, parameters.EpochCount)
-
 		for i := 0; i < len(X); i++ {
 			X_batch, Y_batch := X[i], Y[i]
 
 			// Forward propagate and store inputs
 			inputCache := n.ForwardPropagate(X_batch)
-
-			cost := n.ComputeCost(inputCache[len(inputCache)-1], Y_batch)
-			log.Printf("Cost after %d iter: %v\n", i+1, cost)
 
 			// Backpropagation to fill the derivatives
 			backPropagationCache := n.BackPropagate(Y_batch, inputCache)
@@ -168,11 +164,15 @@ func (n *nn) Train(X, Y []matrix.Matrix[float64], parameters NeuralNetworkParame
 		}
 
 		parameters.currentEpoch++
+		prediction := n.Predict(X[0])
+		cost := n.ComputeCost(prediction, Y[0])
+		accuracy := parameters.AccuracyMetric.Calculate(Y[0], prediction)
+		log.Printf("Epoch %d/%d, cost: %v, accuracy: %v\n", e+1, parameters.EpochCount, cost, accuracy)
 
-		log.Printf(
-			"Accuracy: %v\n",
-			parameters.AccuracyMetric.Calculate(Y[0], n.Predict(X[0])),
-		)
+		if math.IsNaN(cost) || math.IsInf(cost, 0) || cost == 0.0 {
+			return errors.New("cost is an invalid number")
+		}
+
 		DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, fmt.Sprintf("epoch_%d.json", e+1)))
 	}
 	DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, "finish.json"))

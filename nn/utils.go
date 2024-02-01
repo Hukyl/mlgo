@@ -3,7 +3,6 @@ package nn
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"os"
 
 	"github.com/Hukyl/mlgo/activation"
@@ -28,7 +27,6 @@ func jsonifyObject(obj interface{}, path string) error {
 
 func DumpNeuralNetwork(nn NeuralNetwork, path string) {
 	jsonifyObject(nn, path)
-	log.Printf("Dumped to %q\n", path)
 }
 
 func LoadNeuralNetwork(path string) (NeuralNetwork, error) {
