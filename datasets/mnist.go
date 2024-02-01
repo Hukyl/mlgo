@@ -1,36 +1,53 @@
 package datasets
 
-import "github.com/Hukyl/mlgo/matrix"
-
-func translateToMatrix(labels []float64, data [][]float64) (matrix.Matrix[float64], matrix.Matrix[float64]) {
-	matrixLabels := matrix.NewZeroMatrix[float64](len(labels), 10)
-	for i, label := range labels {
-		matrixLabels.Set(i, int(label), 1)
-	}
-	matrixData, _ := matrix.NewMatrix(data)
-	return matrixData, matrixLabels
-}
+import (
+	"encoding/csv"
+	"os"
+	"strconv"
+)
 
 // MnistDataset reads the CSV files for MNIST dataset, in the form:
-// [2]{X_train, Y_train}, [2]{X_test, Y_test}, err
-func MnistDataset(trainPath, testPath string) ([2]matrix.Matrix[float64], [2]matrix.Matrix[float64], error) {
-	train := [2]matrix.Matrix[float64]{}
-	test := [2]matrix.Matrix[float64]{}
-
-	labels, data, err := ReadMnistCSV(trainPath)
+// X, Y, err
+//
+// Each slice of X represents a whole 28x28 image with values ranging from 0 to 255, i.e. length of 784.
+// In order to feed it to the neural network, outputs have to be transposed and one-hot encoded.
+func MnistDataset(filename string) ([][]float64, []float64, error) {
+	// Open the CSV file
+	file, err := os.Open(filename)
 	if err != nil {
-		return train, test, err
+		return nil, nil, err
 	}
-	X_train, Y_train := translateToMatrix(labels, data)
+	defer file.Close()
 
-	labels, data, err = ReadMnistCSV(testPath)
-	if err != nil {
-		return train, test, err
+	// Create a CSV reader
+	reader := csv.NewReader(file)
+
+	var data [][]float64
+	var currentLine []float64
+	var labels []float64
+
+	reader.Read() // skip header
+	// Read records from the CSV file
+	for {
+		record, err := reader.Read()
+		if err != nil {
+			break
+		}
+
+		label, _ := strconv.ParseFloat(record[0], 64)
+		// Convert string values to float64 and append to the current batch
+		for _, col := range record[1:] {
+			value, err := strconv.ParseFloat(col, 64)
+			if err != nil {
+				return nil, nil, err
+			}
+			currentLine = append(currentLine, value)
+		}
+
+		data = append(data, currentLine)
+		currentLine = make([]float64, 0)
+		labels = append(labels, label)
 	}
-	X_test, Y_test := translateToMatrix(labels, data)
 
-	train[0], train[1] = X_train, Y_train
-	test[0], test[1] = X_test, Y_test
-
-	return train, test, nil
+	return data, labels, nil
 }

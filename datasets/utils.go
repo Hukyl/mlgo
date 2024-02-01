@@ -1,48 +1,31 @@
 package datasets
 
 import (
-	"encoding/csv"
-	"os"
-	"strconv"
+	"github.com/Hukyl/mlgo/matrix"
+	"github.com/Hukyl/mlgo/utils"
 )
 
-func ReadMnistCSV(filename string) ([]float64, [][]float64, error) {
-	// Open the CSV file
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer file.Close()
+func BatchMatrix[T utils.Number](input [][]T, batchSize int) []matrix.Matrix[T] {
+	var result []matrix.Matrix[T]
 
-	// Create a CSV reader
-	reader := csv.NewReader(file)
-
-	var data [][]float64
-	var currentLine []float64
-	var labels []float64
-
-	reader.Read() // skip header
-	// Read records from the CSV file
-	for {
-		record, err := reader.Read()
-		if err != nil {
-			break
+	for i := 0; i < len(input); i += batchSize {
+		end := i + batchSize
+		if end > len(input) {
+			end = len(input)
 		}
-
-		label, _ := strconv.ParseFloat(record[0], 64)
-		// Convert string values to float64 and append to the current batch
-		for _, col := range record[1:] {
-			value, err := strconv.ParseFloat(col, 64)
-			if err != nil {
-				return nil, nil, err
-			}
-			currentLine = append(currentLine, value)
-		}
-
-		data = append(data, currentLine)
-		currentLine = make([]float64, 0)
-		labels = append(labels, label)
+		m, _ := matrix.NewMatrix(input[i:end])
+		result = append(result, m)
 	}
 
-	return labels, data, nil
+	return result
+}
+
+func OneHotEncode(labels []float64) [][]float64 {
+	output := make([][]float64, len(labels))
+	for i, v := range labels {
+		vector := make([]float64, 10)
+		vector[int(v)] = 1
+		output[i] = vector
+	}
+	return output
 }
