@@ -22,3 +22,6 @@ go.work
 
 # IDE stuff
 .vscode
+
+# Testing purposes
+test.go
