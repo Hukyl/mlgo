@@ -7,7 +7,7 @@ import (
 	"github.com/Hukyl/mlgo/utils"
 )
 
-const clipValue = 1e-7
+const clipValue = 1e-10
 
 type CategoricalCrossEntropyLoss[T utils.Float] struct{}
 
@@ -57,7 +57,7 @@ type CCELossWithSoftmax[T utils.Float] struct {
 }
 
 func (l CCELossWithSoftmax[T]) ApplyDerivativeMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T] {
-	result, _ := yHat.Add(y.MultiplyByScalar(-1))
+	result, _ := yHat.Add(matrix.Clip(y, clipValue, 1-clipValue).MultiplyByScalar(-1))
 	return result
 }
 
