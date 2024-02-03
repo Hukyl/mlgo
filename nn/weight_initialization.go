@@ -26,7 +26,7 @@ func (r RandomInitialization) Generate(layerSize [2]int) float64 {
 type XavierInitialization struct{}
 
 func (x XavierInitialization) Generate(layerSize [2]int) float64 {
-	return rand.Float64() - 0.5
+	return rand.NormFloat64() * math.Sqrt(float64(2)/float64(layerSize[0]+layerSize[1]))
 }
 
 /******************************************************/
