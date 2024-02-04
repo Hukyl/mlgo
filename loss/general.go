@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	matrix "github.com/Hukyl/mlgo/matrix"
-	"github.com/Hukyl/mlgo/utils"
+	. "golang.org/x/exp/constraints"
 )
 
-type LossFunction[T utils.Float] interface {
+type LossFunction[T Float] interface {
 	Apply(y T, yHat T) T
 	ApplyMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T]
 
@@ -15,7 +15,7 @@ type LossFunction[T utils.Float] interface {
 	ApplyDerivativeMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T]
 }
 
-func DynamicLoss[T utils.Float](lossName string) (LossFunction[T], error) {
+func DynamicLoss[T Float](lossName string) (LossFunction[T], error) {
 	var lossMap = map[string]func() LossFunction[T]{
 		"SquareLoss":                  func() LossFunction[T] { return SquareLoss[T]{} },
 		"LogLoss":                     func() LossFunction[T] { return LogLoss[T]{} },

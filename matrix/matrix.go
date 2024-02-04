@@ -8,10 +8,10 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/Hukyl/mlgo/utils"
+	. "golang.org/x/exp/constraints"
 )
 
-type Matrix[T utils.Number] interface {
+type Matrix[T Signed | Float] interface {
 	json.Marshaler
 	json.Unmarshaler
 	fmt.Stringer
@@ -43,7 +43,7 @@ type Matrix[T utils.Number] interface {
 	DeepCopy() Matrix[T]
 }
 
-type matrix[T utils.Number] struct {
+type matrix[T Signed | Float] struct {
 	data [][]T
 }
 

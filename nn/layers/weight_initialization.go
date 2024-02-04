@@ -1,4 +1,4 @@
-package nn
+package layers
 
 import (
 	"math"
@@ -38,7 +38,7 @@ func (x XavierInitialization) Generate(layerSize [2]int) float64 {
 type HeInitialization struct{}
 
 func (h HeInitialization) Generate(layerSize [2]int) float64 {
-	return rand.NormFloat64() * math.Sqrt(float64(2)/float64(layerSize[1]))
+	return rand.NormFloat64() * math.Sqrt(float64(2)/float64(layerSize[0]))
 }
 
 /******************************************************/

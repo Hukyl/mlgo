@@ -2,12 +2,10 @@ package nn
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 
-	"github.com/Hukyl/mlgo/activation"
 	"github.com/Hukyl/mlgo/loss"
-	"github.com/Hukyl/mlgo/matrix"
+	"github.com/Hukyl/mlgo/nn/layers"
 )
 
 func jsonifyObject(obj interface{}, path string) error {
@@ -48,41 +46,20 @@ func LoadNeuralNetwork(path string) (NeuralNetwork, error) {
 
 /************************************************************************/
 
-func NewNeuralNetwork(layers []Layer, lossFunction loss.LossFunction[float64]) NeuralNetwork {
+func NewNeuralNetwork(layers []layers.Layer, lossFunction loss.LossFunction[float64]) NeuralNetwork {
 	return &nn{layers: layers, LossFunction: lossFunction}
 }
 
-func NewRandomNeuralNetwork(
-	inputSize []int,
-	activationFunctions []activation.ActivationFunction,
-	lossFunction loss.LossFunction[float64],
-	wi WeightInitialization,
-) NeuralNetwork {
-	layers := make([]Layer, 0, len(inputSize)-1)
-	for j := 1; j < len(inputSize); j++ {
-		layer := NewRandomizedLayer([2]int{inputSize[j], inputSize[j-1]}, activationFunctions[j-1], wi)
-		layers = append(layers, layer)
-	}
-	return &nn{layers: layers, LossFunction: lossFunction}
-}
-
-/************************************************************************/
-
-func NewLayer(W, b matrix.Matrix[float64], a activation.ActivationFunction) (Layer, error) {
-	l := &layer{weights: W, bias: b, activation: a}
-	if b.Size() != l.OutputSize() {
-		return nil, errors.New("invalid bias size")
-	}
-	return l, nil
-}
-
-func NewRandomizedLayer(weightSize [2]int, a activation.ActivationFunction, wi WeightInitialization) Layer {
-	W := matrix.NewZeroMatrix[float64](weightSize[0], weightSize[1])
-	for i := 0; i < weightSize[0]; i++ {
-		for j := 0; j < weightSize[1]; j++ {
-			W.Set(i, j, wi.Generate(weightSize))
-		}
-	}
-	b := matrix.NewZeroMatrix[float64](weightSize[0], 1)
-	return &layer{weights: W, bias: b, activation: a}
-}
+// func NewRandomNeuralNetwork(
+// 	inputSize []int,
+// 	activationFunctions []activation.ActivationFunction,
+// 	lossFunction loss.LossFunction[float64],
+// 	wi WeightInitialization,
+// ) NeuralNetwork {
+// 	layers := make([]layers.Layer, 0, len(inputSize)-1)
+// 	for j := 1; j < len(inputSize); j++ {
+// 		layer := NewRandomizedLayer([2]int{inputSize[j], inputSize[j-1]}, activationFunctions[j-1], wi)
+// 		layers = append(layers, layer)
+// 	}
+// 	return &nn{layers: layers, LossFunction: lossFunction}
+// }

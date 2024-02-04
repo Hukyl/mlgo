@@ -4,10 +4,10 @@ import (
 	"math"
 
 	"github.com/Hukyl/mlgo/matrix"
-	"github.com/Hukyl/mlgo/utils"
+	. "golang.org/x/exp/constraints"
 )
 
-type LogLoss[T utils.Float] struct{}
+type LogLoss[T Float] struct{}
 
 func (l LogLoss[T]) Apply(y, yHat T) T {
 	return -y*T(math.Log(float64(yHat))) - (1-y)*T(math.Log(1-float64(yHat)))

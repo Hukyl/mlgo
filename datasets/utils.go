@@ -2,10 +2,10 @@ package datasets
 
 import (
 	"github.com/Hukyl/mlgo/matrix"
-	"github.com/Hukyl/mlgo/utils"
+	. "golang.org/x/exp/constraints"
 )
 
-func BatchMatrix[T utils.Number](input [][]T, batchSize int) []matrix.Matrix[T] {
+func BatchMatrix[T Signed | Float](input [][]T, batchSize int) []matrix.Matrix[T] {
 	var result []matrix.Matrix[T]
 
 	for i := 0; i < len(input); i += batchSize {

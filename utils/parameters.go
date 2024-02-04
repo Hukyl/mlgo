@@ -1,4 +1,4 @@
-package nn
+package utils
 
 import (
 	"github.com/Hukyl/mlgo/metric"
@@ -25,7 +25,7 @@ func (nnp NeuralNetworkParameters) LearningRate() float64 {
 	return nnp.InitialLearningRate / (1 + nnp.LearningRateDecay*float64(nnp.currentEpoch))
 }
 
-func validateParameters(nnp *NeuralNetworkParameters) {
+func (nnp *NeuralNetworkParameters) Validate() {
 	if nnp.InitialLearningRate == 0 {
 		nnp.InitialLearningRate = defaultLearningRate
 	}
@@ -35,4 +35,12 @@ func validateParameters(nnp *NeuralNetworkParameters) {
 	if nnp.EpochCount == 0 {
 		nnp.EpochCount = defaultEpochCount
 	}
+}
+
+func (nnp *NeuralNetworkParameters) ResetEpoch() {
+	nnp.currentEpoch = 0
+}
+
+func (nnp *NeuralNetworkParameters) IncrementEpoch() {
+	nnp.currentEpoch++
 }

@@ -2,10 +2,10 @@ package loss
 
 import (
 	"github.com/Hukyl/mlgo/matrix"
-	"github.com/Hukyl/mlgo/utils"
+	. "golang.org/x/exp/constraints"
 )
 
-type SquareLoss[T utils.Float] struct{}
+type SquareLoss[T Float] struct{}
 
 func (s SquareLoss[T]) Apply(y, yHat T) T {
 	return (y - yHat) * (y - yHat) / 2

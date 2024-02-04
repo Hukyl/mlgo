@@ -11,8 +11,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Hukyl/mlgo/loss"
-	"github.com/Hukyl/mlgo/matrix"
+	"github.com/Hukyl/mlgo/activation"
+	. "github.com/Hukyl/mlgo/loss"
+	. "github.com/Hukyl/mlgo/matrix"
+	. "github.com/Hukyl/mlgo/nn/layers"
+	"github.com/Hukyl/mlgo/utils"
 )
 
 type NeuralNetwork interface {
@@ -23,25 +26,25 @@ type NeuralNetwork interface {
 	OutputSize() [2]int
 
 	// Training functions
-	ComputeCost(yHat, Y matrix.Matrix[float64]) float64
-	ForwardPropagate(X matrix.Matrix[float64]) []matrix.Matrix[float64]
-	BackPropagate(Y matrix.Matrix[float64], inputCache []matrix.Matrix[float64]) [][2]matrix.Matrix[float64]
+	ComputeCost(yHat, Y Matrix[float64]) float64
+	ForwardPropagate(X Matrix[float64]) []Matrix[float64]
+	BackPropagate(Y Matrix[float64], inputCache []Matrix[float64]) [][2]Matrix[float64]
 	UpdateWeights(
-		inputCache []matrix.Matrix[float64],
-		backPropagationCache [][2]matrix.Matrix[float64],
-		parameters NeuralNetworkParameters,
+		inputCache []Matrix[float64],
+		backPropagationCache [][2]Matrix[float64],
+		parameters utils.NeuralNetworkParameters,
 	)
 
 	// Prediction functions
-	Predict(X matrix.Matrix[float64]) (Y matrix.Matrix[float64])
-	Train(X, Y []matrix.Matrix[float64], parameters NeuralNetworkParameters) error
+	Predict(X Matrix[float64]) (Y Matrix[float64])
+	Train(X, Y []Matrix[float64], parameters utils.NeuralNetworkParameters) error
 }
 
 /************************************************************************/
 
 type nn struct {
 	layers       []Layer
-	LossFunction loss.LossFunction[float64]
+	LossFunction LossFunction[float64]
 }
 
 func (n *nn) InputSize() [2]int {
@@ -52,15 +55,17 @@ func (n *nn) OutputSize() [2]int {
 	return n.layers[len(n.layers)-1].OutputSize()
 }
 
-func (n *nn) Predict(X matrix.Matrix[float64]) matrix.Matrix[float64] {
+func (n *nn) Predict(X Matrix[float64]) Matrix[float64] {
 	Y := X
 	for _, l := range n.layers {
-		Y, _ = l.ForwardPropagate(Y)
+		if !l.IsTraining() {
+			Y, _ = l.ForwardPropagate(Y)
+		}
 	}
 	return Y
 }
 
-func (n *nn) validateTrainSamples(X, Y []matrix.Matrix[float64]) error {
+func (n *nn) validateTrainSamples(X, Y []Matrix[float64]) error {
 	var errorText string
 
 	for i := 0; i < len(X); i++ {
@@ -84,8 +89,8 @@ func (n *nn) validateTrainSamples(X, Y []matrix.Matrix[float64]) error {
 //
 // Returns slice, with size of (N layers)+1, where [0] is the input to the network,
 // and each element is the result of propagation through the next layer.
-func (n *nn) ForwardPropagate(X matrix.Matrix[float64]) []matrix.Matrix[float64] {
-	inputCache := make([]matrix.Matrix[float64], len(n.layers)+1)
+func (n *nn) ForwardPropagate(X Matrix[float64]) []Matrix[float64] {
+	inputCache := make([]Matrix[float64], len(n.layers)+1)
 	inputCache[0] = X
 
 	for j, layer := range n.layers {
@@ -104,13 +109,13 @@ func (n *nn) ForwardPropagate(X matrix.Matrix[float64]) []matrix.Matrix[float64]
 //	L1 -> dL/dZ1 = dL/dA3 * dA3/dZ3 * dZ3/dA2 * dA2/dZ2 * dZ2/dA1 * dA1/dZ1
 //	L2 -> dL/dZ2 = dL/dA3 * dA3/dZ3 * dZ3/dA2 * dA2/dZ2
 //	L3 -> dL/dZ3 = dL/dA3 * dA3/dZ3
-func (n *nn) BackPropagate(Y matrix.Matrix[float64], inputCache []matrix.Matrix[float64]) [][2]matrix.Matrix[float64] {
+func (n *nn) BackPropagate(Y Matrix[float64], inputCache []Matrix[float64]) [][2]Matrix[float64] {
 	layerCount := len(n.layers)
-	backPropagationCache := make([][2]matrix.Matrix[float64], layerCount+1)
+	backPropagationCache := make([][2]Matrix[float64], layerCount+1)
 
 	yHat := inputCache[layerCount]
 	dL := n.LossFunction.ApplyDerivativeMatrix(Y, yHat)
-	backPropagationCache[layerCount] = [2]matrix.Matrix[float64]{dL, dL}
+	backPropagationCache[layerCount] = [2]Matrix[float64]{dL, dL}
 
 	for j := layerCount - 1; j >= 0; j-- {
 		layer := n.layers[j]
@@ -120,7 +125,7 @@ func (n *nn) BackPropagate(Y matrix.Matrix[float64], inputCache []matrix.Matrix[
 	return backPropagationCache
 }
 
-func (n *nn) ComputeCost(yHat, Y matrix.Matrix[float64]) float64 {
+func (n *nn) ComputeCost(yHat, Y Matrix[float64]) float64 {
 	cost := float64(0)
 
 	losses := n.LossFunction.ApplyMatrix(Y, yHat)
@@ -133,20 +138,20 @@ func (n *nn) ComputeCost(yHat, Y matrix.Matrix[float64]) float64 {
 	return cost / float64(losses.ColumnCount())
 }
 
-func (n *nn) UpdateWeights(inputCache []matrix.Matrix[float64], backPropagationCache [][2]matrix.Matrix[float64], parameters NeuralNetworkParameters) {
+func (n *nn) UpdateWeights(inputCache []Matrix[float64], backPropagationCache [][2]Matrix[float64], parameters utils.NeuralNetworkParameters) {
 	for j, layer := range n.layers {
 		layer.UpdateWeights(backPropagationCache[j][0], inputCache[j], parameters)
 	}
 }
 
-func (n *nn) Train(X, Y []matrix.Matrix[float64], parameters NeuralNetworkParameters) error {
+func (n *nn) Train(X, Y []Matrix[float64], parameters utils.NeuralNetworkParameters) error {
 	err := n.validateTrainSamples(X, Y)
 	if err != nil {
 		return err
 	}
-	validateParameters(&parameters)
+	parameters.Validate()
 
-	parameters.currentEpoch = 0
+	parameters.ResetEpoch()
 
 	DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, "start.json"))
 	for e := 0; e < int(parameters.EpochCount); e++ {
@@ -163,7 +168,7 @@ func (n *nn) Train(X, Y []matrix.Matrix[float64], parameters NeuralNetworkParame
 			n.UpdateWeights(inputCache, backPropagationCache, parameters)
 		}
 
-		parameters.currentEpoch++
+		parameters.IncrementEpoch()
 		prediction := n.Predict(X[0])
 		cost := n.ComputeCost(prediction, Y[0])
 		accuracy := parameters.AccuracyMetric.Calculate(Y[0], prediction)
@@ -177,7 +182,7 @@ func (n *nn) Train(X, Y []matrix.Matrix[float64], parameters NeuralNetworkParame
 	}
 	DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, "finish.json"))
 
-	parameters.currentEpoch = 0
+	parameters.ResetEpoch()
 
 	return nil
 }
@@ -206,16 +211,23 @@ func (n *nn) MarshalJSON() ([]byte, error) {
 
 func (n *nn) UnmarshalJSON(data []byte) error {
 	var v struct {
-		Layers       []*layer
+		Layers       []json.RawMessage
 		LossFunction string
 	}
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
 	n.layers = make([]Layer, len(v.Layers))
-	for i, l := range v.Layers {
-		n.layers[i] = l
+	for i, lData := range v.Layers {
+		W, _ := NewMatrix([][]float64{{}})
+		b, _ := NewMatrix([][]float64{{}})
+		layer, _ := NewDense(W, b, activation.Linear{})
+		err := layer.UnmarshalJSON(lData)
+		if err != nil {
+			return err
+		}
+		n.layers[i] = layer
 	}
-	n.LossFunction, _ = loss.DynamicLoss[float64](v.LossFunction)
+	n.LossFunction, _ = DynamicLoss[float64](v.LossFunction)
 	return nil
 }

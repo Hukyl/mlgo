@@ -3,13 +3,14 @@ package loss
 import (
 	"math"
 
+	. "golang.org/x/exp/constraints"
+
 	"github.com/Hukyl/mlgo/matrix"
-	"github.com/Hukyl/mlgo/utils"
 )
 
 const clipValue = 1e-10
 
-type CategoricalCrossEntropyLoss[T utils.Float] struct{}
+type CategoricalCrossEntropyLoss[T Float] struct{}
 
 func (l CategoricalCrossEntropyLoss[T]) Apply(y, yHat T) T {
 	return -y * T(math.Log(float64(yHat)))
@@ -52,7 +53,7 @@ func (l CategoricalCrossEntropyLoss[T]) ApplyDerivativeMatrix(y matrix.Matrix[T]
 // combines the effect of the two to efficiently compute the derivative.
 //
 // IMPORTANT: should be only used with SoftmaxWithCCE activation function!
-type CCELossWithSoftmax[T utils.Float] struct {
+type CCELossWithSoftmax[T Float] struct {
 	CategoricalCrossEntropyLoss[T]
 }
 

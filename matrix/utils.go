@@ -4,10 +4,10 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/Hukyl/mlgo/utils"
+	. "golang.org/x/exp/constraints"
 )
 
-func NewMatrix[T utils.Number](data [][]T) (Matrix[T], error) {
+func NewMatrix[T Signed | Float](data [][]T) (Matrix[T], error) {
 	if len(data) == 0 {
 		return nil, errors.New("at least one row")
 	}
@@ -21,7 +21,7 @@ func NewMatrix[T utils.Number](data [][]T) (Matrix[T], error) {
 	return m, nil
 }
 
-func NewZeroMatrix[T utils.Number](rowCount int, columnCount int) Matrix[T] {
+func NewZeroMatrix[T Signed | Float](rowCount int, columnCount int) Matrix[T] {
 	m := new(matrix[T])
 	m.data = make([][]T, rowCount)
 	for i := 0; i < rowCount; i++ {
@@ -50,7 +50,7 @@ func IdentityMatrix(rowCount int) Matrix[float64] {
 
 /****************************************************************************/
 
-func ApplyByElement[T utils.Number](M Matrix[T], f func(T) T) {
+func ApplyByElement[T Signed | Float](M Matrix[T], f func(T) T) {
 	var value T
 	for i := 0; i < M.RowCount(); i++ {
 		for j := 0; j < M.ColumnCount(); j++ {
@@ -60,7 +60,7 @@ func ApplyByElement[T utils.Number](M Matrix[T], f func(T) T) {
 	}
 }
 
-func Clip[T utils.Number](M Matrix[T], lower, upper T) Matrix[T] {
+func Clip[T Signed | Float](M Matrix[T], lower, upper T) Matrix[T] {
 	result := M.DeepCopy()
 
 	wg := sync.WaitGroup{}
