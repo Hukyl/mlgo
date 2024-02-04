@@ -20,13 +20,24 @@ func (r RandomInitialization) Generate(layerSize [2]int) float64 {
 
 /******************************************************/
 
-// XavierInitialization is a weight initialization technique, also known as Glorot initialization.
+// XavierNormalInitialization is a weight initialization technique, also known as Glorot initialization.
 //
 // Mainly used for tanh activation function.
-type XavierInitialization struct{}
+type XavierNormalInitialization struct{}
 
-func (x XavierInitialization) Generate(layerSize [2]int) float64 {
+func (x XavierNormalInitialization) Generate(layerSize [2]int) float64 {
 	return rand.NormFloat64() * math.Sqrt(float64(2)/float64(layerSize[0]+layerSize[1]))
+}
+
+/******************************************************/
+
+type XavierUniformInitialization struct{}
+
+func (x XavierUniformInitialization) Generate(layerSize [2]int) float64 {
+	limit := math.Sqrt(float64(6) / float64(layerSize[0]+layerSize[1]))
+
+	// Generate a random number in the range [-x, x]
+	return (rand.Float64()*2 - 1.0) * limit
 }
 
 /******************************************************/
