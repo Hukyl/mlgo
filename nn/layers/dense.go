@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/Hukyl/mlgo/activation"
 	. "github.com/Hukyl/mlgo/matrix"
@@ -146,7 +147,12 @@ func (d *dense) UpdateWeights(dAdZ, input Matrix[float64], parameters utils.Neur
 /************************************************************************/
 
 func (d dense) String() string {
-	return fmt.Sprintf("W = %s, b = %s", d.Weights(), d.Bias())
+	return fmt.Sprintf(
+		"Dense{%d -> %d, activation: %s}",
+		d.InputSize()[0],
+		d.OutputSize()[0],
+		reflect.TypeOf(d.activation).Name(),
+	)
 }
 
 func (d *dense) MarshalJSON() ([]byte, error) {
@@ -154,43 +160,35 @@ func (d *dense) MarshalJSON() ([]byte, error) {
 		Weights    Matrix[float64]
 		Bias       Matrix[float64]
 		Activation string
+		Type       string
 	}{
-		Weights: d.weights, Bias: d.bias, Activation: reflect.TypeOf(d.activation).Name(),
+		Weights:    d.weights,
+		Bias:       d.bias,
+		Activation: reflect.TypeOf(d.activation).Name(),
+		Type:       "Dense",
 	})
 }
 
 func (d *dense) UnmarshalJSON(data []byte) error {
-	// var v struct {
-	// 	Weights    *matrix[float64]
-	// 	Bias       *matrix[float64]
-	// 	Activation string
-	// }
-	var v map[string]interface{}
+	var v map[string]json.RawMessage
 
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
 
 	w, _ := NewMatrix([][]float64{{}})
-	wData, err := json.Marshal(v["Weights"])
-	if err != nil {
-		return err
-	}
-	if err := w.UnmarshalJSON(wData); err != nil {
+	if err := w.UnmarshalJSON(v["Weights"]); err != nil {
 		return err
 	}
 	d.weights = w
 
 	b, _ := NewMatrix([][]float64{{}})
-	bData, err := json.Marshal(v["Bias"])
-	if err != nil {
-		return err
-	}
-	if err := b.UnmarshalJSON(bData); err != nil {
+	if err := b.UnmarshalJSON(v["Bias"]); err != nil {
 		return err
 	}
 	d.bias = b
 
-	d.activation, _ = activation.DynamicActivation(v["Activation"].(string))
+	activationLiteral, _ := strconv.Unquote(string(v["Activation"]))
+	d.activation, _ = activation.DynamicActivation(activationLiteral)
 	return nil
 }

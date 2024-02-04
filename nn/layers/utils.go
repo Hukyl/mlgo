@@ -12,7 +12,7 @@ import (
 
 func NewDense(W, b Matrix[float64], a activation.ActivationFunction) (Layer, error) {
 	l := &dense{weights: W, bias: b, activation: a}
-	if b.Size() != l.OutputSize() {
+	if b.Size()[0] != l.OutputSize()[0] {
 		return nil, errors.New("invalid bias size")
 	}
 	return l, nil

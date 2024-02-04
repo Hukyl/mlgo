@@ -219,10 +219,22 @@ func (n *nn) UnmarshalJSON(data []byte) error {
 	}
 	n.layers = make([]Layer, len(v.Layers))
 	for i, lData := range v.Layers {
-		W, _ := NewMatrix([][]float64{{}})
-		b, _ := NewMatrix([][]float64{{}})
-		layer, _ := NewDense(W, b, activation.Linear{})
-		err := layer.UnmarshalJSON(lData)
+		var err error
+		var layer Layer
+		var layerType struct {
+			Type string
+		}
+		json.Unmarshal(lData, &layerType)
+		switch layerType.Type {
+		case "Dense":
+			W, _ := NewMatrix([][]float64{{}})
+			b, _ := NewMatrix([][]float64{{}})
+			layer, _ = NewDense(W, b, activation.Linear{})
+			err = layer.UnmarshalJSON(lData)
+		case "Dropout":
+			layer = NewDropout(0, 0)
+			err = layer.UnmarshalJSON(lData)
+		}
 		if err != nil {
 			return err
 		}
