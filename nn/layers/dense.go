@@ -26,8 +26,8 @@ type Layer interface {
 	Activation() activation.ActivationFunction
 
 	ForwardPropagate(X Matrix[float64]) (Y Matrix[float64], err error)
-	BackPropagate(nextLayerPropagation, output Matrix[float64]) [2]Matrix[float64]
-	UpdateWeights(nextLayerPropagation, input Matrix[float64], parameters utils.NeuralNetworkParameters)
+	BackPropagate(nextLayerPropagation, input, output Matrix[float64], parameters utils.NeuralNetworkParameters) Matrix[float64]
+	updateWeights(nextLayerPropagation, input Matrix[float64], parameters utils.NeuralNetworkParameters)
 }
 
 /************************************************************************/
@@ -82,12 +82,14 @@ func (d *dense) ForwardPropagate(X Matrix[float64]) (Matrix[float64], error) {
 // BackPropagate applies derivatives of the input and activation function to
 // propagate the result further to previous layers.
 //
-//   - nextLayerPropagation is the result for `nextLayer.BackPropagate()[1]`, where
-//     `nextLayer` is the next dense in the neural network.
+//   - nextLayerPropagation is the result for `nextLayer.BackPropagate()`, where
+//     `nextLayer` is the next layer in the neural network.
+//   - X is the cached input for current layer, which was used to obtain `nextLayerPropagation“
+//   - A is the cached output of current layer, produced via forward propagation on `X`.
 //   - output is the cached output that this dense produced via forward propagation.
 //
 // Method is based on the fact, that the previous dense derivative is based on the next
-// dense's partial derivative.
+// layer's partial derivative.
 // For example (using log-loss and sigmoid activation function):
 //
 //	dL/dW3 = dL/dA3 * dA3/dZ3 * dZ3/dW3
@@ -102,34 +104,41 @@ func (d *dense) ForwardPropagate(X Matrix[float64]) (Matrix[float64], error) {
 //	= (W2.T() @ [(W3.T() @ (A3 - Y) . A2(1-A2))] . A1(1-A1)) @ X.T()
 //	[FOUND in dL/dW2]
 //
-// Then, for L3 (with weights W3) this method returns:
+// Then, for L3 (with weights W3) BackPropagate does the following:
 //
-//	result[0] = ([(A3 - Y) / (A3 - A3^2)] . (A3-A3^2))
-//	result[0] = (nextLayerPropagation . dA/dZ)
-//	result[1] = W3.T() @ ([(A3 - Y) / (A3 - A3^2)] . (A3-A3^2))
-//	result[1] = weights.T() @ result[0]
+//   - produce the partial derivative for this layer.
 //
-// Where result[0] can be used (with addition of one multiplication) to update this
-// dense weights (in this case, W3), and result[1] can be used for previous dense
-// (in our case, L2) to update its (in our case, W2) weights, using ```.UpdateWeights()``` method.
-func (d *dense) BackPropagate(nextLayerPropagation, A Matrix[float64]) [2]Matrix[float64] {
+//     dLdZ = dLdA * dAdZ = nextLayerPropagation * layer.Activation.BackPropagateMatrix()
+//     dLdb = dLdZ * dZdb = dLdZ * 1
+//     dLdW = dLdZ * dZdW = dLdZ * X.T()
+//
+//   - update the weights and bias as the main goal of backpropagation.
+//
+//     W = W - learningRate * dLdW
+//     b = b - learningRate * dLdb
+//
+//   - produce the propagation base for the next layer.
+//
+//     thisLayerPropagation = W.T() @ dLdZ
+func (d *dense) BackPropagate(nextLayerPropagation, X, A Matrix[float64], parameters utils.NeuralNetworkParameters) Matrix[float64] {
 	dAdZ := A.DeepCopy() // derivative for activation function
 	d.Activation().BackPropagateMatrix(dAdZ)
 
-	result := [2]Matrix[float64]{}
-	result[0], _ = nextLayerPropagation.MultiplyElementwise(dAdZ)
-	result[1], _ = d.Weights().T().Multiply(result[0])
+	dLdZ, _ := nextLayerPropagation.MultiplyElementwise(dAdZ)
+	d.updateWeights(dLdZ, X, parameters)
+
+	result, _ := d.Weights().T().Multiply(dLdZ)
 	return result
 }
 
-// UpdateWeights updates the weights based on the `nextLayer.BackPropagate()[0]`, where
+// UpdateWeights updates the weights based on the BackPropagate(), where
 // `nextLayer` is the next dense in the neural network, and the input to the current dense.
 //
 // Method is based on that for each next dense, derivative is going to be based on the next dense's
 // backpropagation derivative.
-func (d *dense) UpdateWeights(dAdZ, input Matrix[float64], parameters utils.NeuralNetworkParameters) {
-	db, _ := dAdZ.Multiply(NewOnesMatrix(input.ColumnCount(), 1))
-	dW, _ := dAdZ.Multiply(input.T())
+func (d *dense) updateWeights(dLdZ, input Matrix[float64], parameters utils.NeuralNetworkParameters) {
+	db, _ := dLdZ.Multiply(NewOnesMatrix(input.ColumnCount(), 1))
+	dW, _ := dLdZ.Multiply(input.T())
 
 	columns := float64(input.ColumnCount())
 

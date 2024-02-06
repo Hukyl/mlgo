@@ -28,12 +28,7 @@ type NeuralNetwork interface {
 	// Training functions
 	ComputeCost(yHat, Y Matrix[float64]) float64
 	ForwardPropagate(X Matrix[float64]) []Matrix[float64]
-	BackPropagate(Y Matrix[float64], inputCache []Matrix[float64]) [][2]Matrix[float64]
-	UpdateWeights(
-		inputCache []Matrix[float64],
-		backPropagationCache [][2]Matrix[float64],
-		parameters utils.NeuralNetworkParameters,
-	)
+	BackPropagate(Y Matrix[float64], inputCache []Matrix[float64], parameters utils.NeuralNetworkParameters)
 
 	// Prediction functions
 	Predict(X Matrix[float64]) (Y Matrix[float64])
@@ -109,20 +104,25 @@ func (n *nn) ForwardPropagate(X Matrix[float64]) []Matrix[float64] {
 //	L1 -> dL/dZ1 = dL/dA3 * dA3/dZ3 * dZ3/dA2 * dA2/dZ2 * dZ2/dA1 * dA1/dZ1
 //	L2 -> dL/dZ2 = dL/dA3 * dA3/dZ3 * dZ3/dA2 * dA2/dZ2
 //	L3 -> dL/dZ3 = dL/dA3 * dA3/dZ3
-func (n *nn) BackPropagate(Y Matrix[float64], inputCache []Matrix[float64]) [][2]Matrix[float64] {
+func (n *nn) BackPropagate(Y Matrix[float64], inputCache []Matrix[float64], parameters utils.NeuralNetworkParameters) {
 	layerCount := len(n.layers)
-	backPropagationCache := make([][2]Matrix[float64], layerCount+1)
+
+	var backPropagation Matrix[float64]
 
 	yHat := inputCache[layerCount]
 	dL := n.LossFunction.ApplyDerivativeMatrix(Y, yHat)
-	backPropagationCache[layerCount] = [2]Matrix[float64]{dL, dL}
+
+	backPropagation = dL
 
 	for j := layerCount - 1; j >= 0; j-- {
 		layer := n.layers[j]
-		backPropagationCache[j] = layer.BackPropagate(backPropagationCache[j+1][1], inputCache[j+1])
+		backPropagation = layer.BackPropagate(
+			backPropagation,
+			inputCache[j],
+			inputCache[j+1],
+			parameters,
+		)
 	}
-
-	return backPropagationCache
 }
 
 func (n *nn) ComputeCost(yHat, Y Matrix[float64]) float64 {
@@ -136,12 +136,6 @@ func (n *nn) ComputeCost(yHat, Y Matrix[float64]) float64 {
 		}
 	}
 	return cost / float64(losses.ColumnCount())
-}
-
-func (n *nn) UpdateWeights(inputCache []Matrix[float64], backPropagationCache [][2]Matrix[float64], parameters utils.NeuralNetworkParameters) {
-	for j, layer := range n.layers {
-		layer.UpdateWeights(backPropagationCache[j][0], inputCache[j], parameters)
-	}
 }
 
 func (n *nn) Train(X, Y []Matrix[float64], parameters utils.NeuralNetworkParameters) error {
@@ -161,23 +155,26 @@ func (n *nn) Train(X, Y []Matrix[float64], parameters utils.NeuralNetworkParamet
 			// Forward propagate and store inputs
 			inputCache := n.ForwardPropagate(X_batch)
 
-			// Backpropagation to fill the derivatives
-			backPropagationCache := n.BackPropagate(Y_batch, inputCache)
-
-			// Update parameters
-			n.UpdateWeights(inputCache, backPropagationCache, parameters)
+			// Updating the weights
+			n.BackPropagate(Y_batch, inputCache, parameters)
 		}
 
-		parameters.IncrementEpoch()
-		prediction := n.Predict(X[0])
-		cost := n.ComputeCost(prediction, Y[0])
-		accuracy := parameters.AccuracyMetric.Calculate(Y[0], prediction)
+		cost := float64(0.0)
+		accuracy := float64(0.0)
+		for i := 0; i < len(X); i++ {
+			X_batch, Y_batch := X[i], Y[i]
+
+			prediction := n.Predict(X_batch)
+			cost += n.ComputeCost(prediction, Y_batch) / float64(len(X))
+			if math.IsNaN(cost) || math.IsInf(cost, 0) || cost == 0.0 {
+				return errors.New("cost is an invalid number")
+			}
+
+			accuracy += parameters.AccuracyMetric.Calculate(Y_batch, prediction) / float64(len(X))
+		}
 		log.Printf("Epoch %d/%d, cost: %v, accuracy: %v\n", e+1, parameters.EpochCount, cost, accuracy)
 
-		if math.IsNaN(cost) || math.IsInf(cost, 0) || cost == 0.0 {
-			return errors.New("cost is an invalid number")
-		}
-
+		parameters.IncrementEpoch()
 		DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, fmt.Sprintf("epoch_%d.json", e+1)))
 	}
 	DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, "finish.json"))

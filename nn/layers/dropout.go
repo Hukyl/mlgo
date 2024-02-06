@@ -66,11 +66,11 @@ func (d *dropout) ForwardPropagate(X Matrix[float64]) (Y Matrix[float64], err er
 	return Y, nil
 }
 
-func (d *dropout) BackPropagate(nextLayerPropagation Matrix[float64], output Matrix[float64]) [2]Matrix[float64] {
-	return [2]Matrix[float64]{nextLayerPropagation, nextLayerPropagation}
+func (d *dropout) BackPropagate(nextLayerPropagation, X, A Matrix[float64], parameters utils.NeuralNetworkParameters) Matrix[float64] {
+	return nextLayerPropagation
 }
 
-func (d *dropout) UpdateWeights(_, _ Matrix[float64], _ utils.NeuralNetworkParameters) {}
+func (d *dropout) updateWeights(_, _ Matrix[float64], _ utils.NeuralNetworkParameters) {}
 
 /***************************************************************************/
 
