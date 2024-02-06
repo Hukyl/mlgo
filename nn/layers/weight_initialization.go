@@ -12,10 +12,13 @@ type WeightInitialization interface {
 /*****************************************************/
 
 // RandomInitialization randomly generates a number in range [-0.5, 0.5)
-type RandomInitialization struct{}
+type RandomInitialization struct {
+	Min float64
+	Max float64
+}
 
 func (r RandomInitialization) Generate(layerSize [2]int) float64 {
-	return rand.Float64() - 0.5
+	return r.Min + rand.Float64()*(r.Max-r.Min)
 }
 
 /******************************************************/
