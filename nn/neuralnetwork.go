@@ -122,6 +122,11 @@ func (n *nn) BackPropagate(Y Matrix[float64], inputCache []Matrix[float64], para
 			inputCache[j+1],
 			parameters,
 		)
+		backPropagation = Clip(
+			backPropagation,
+			-parameters.ClipValue,
+			parameters.ClipValue,
+		)
 	}
 }
 
