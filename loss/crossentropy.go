@@ -5,19 +5,19 @@ import (
 
 	. "golang.org/x/exp/constraints"
 
-	"github.com/Hukyl/mlgo/matrix"
+	. "github.com/Hukyl/mlgo/matrix"
 )
 
-const clipValue = 1e-10
-
-type CategoricalCrossEntropyLoss[T Float] struct{}
+type CategoricalCrossEntropyLoss[T Float] struct {
+	LabelSmoothingClip float64
+}
 
 func (l CategoricalCrossEntropyLoss[T]) Apply(y, yHat T) T {
 	return -y * T(math.Log(float64(yHat)))
 }
 
-func (l CategoricalCrossEntropyLoss[T]) ApplyMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T] {
-	result := matrix.NewZeroMatrix[T](1, y.ColumnCount())
+func (l CategoricalCrossEntropyLoss[T]) ApplyMatrix(y Matrix[T], yHat Matrix[T]) Matrix[T] {
+	result := NewZeroMatrix[T](1, y.ColumnCount())
 	for j := 0; j < y.ColumnCount(); j++ {
 		sum := T(0)
 
@@ -36,11 +36,15 @@ func (l CategoricalCrossEntropyLoss[T]) ApplyDerivative(y, yHat T) T {
 	return yHat - y
 }
 
-func (l CategoricalCrossEntropyLoss[T]) ApplyDerivativeMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T] {
-	yClipped := matrix.Clip(y, clipValue, 1-clipValue)
+func (l CategoricalCrossEntropyLoss[T]) ApplyDerivativeMatrix(y Matrix[T], yHat Matrix[T]) Matrix[T] {
+	smoothedLabel := Clip(
+		y,
+		T(l.LabelSmoothingClip)/T(y.ColumnCount()),
+		1-T(l.LabelSmoothingClip),
+	)
 	denominator := yHat.MultiplyByScalar(-1)
-	matrix.ApplyByElement(denominator, func(x T) T { return 1 / x })
-	result, _ := yClipped.MultiplyElementwise(denominator)
+	ApplyByElement(denominator, func(x T) T { return 1 / x })
+	result, _ := smoothedLabel.MultiplyElementwise(denominator)
 	return result
 }
 
@@ -57,8 +61,13 @@ type CCELossWithSoftmax[T Float] struct {
 	CategoricalCrossEntropyLoss[T]
 }
 
-func (l CCELossWithSoftmax[T]) ApplyDerivativeMatrix(y matrix.Matrix[T], yHat matrix.Matrix[T]) matrix.Matrix[T] {
-	result, _ := yHat.Add(matrix.Clip(y, clipValue, 1-clipValue).MultiplyByScalar(-1))
+func (l CCELossWithSoftmax[T]) ApplyDerivativeMatrix(y Matrix[T], yHat Matrix[T]) Matrix[T] {
+	smoothedLabel := Clip(
+		y,
+		T(l.LabelSmoothingClip)/T(y.ColumnCount()),
+		1-T(l.LabelSmoothingClip),
+	)
+	result, _ := yHat.Add(smoothedLabel.MultiplyByScalar(-1))
 	return result
 }
 

@@ -30,6 +30,17 @@ func (s Softmax) ApplyMatrix(M matrix.Matrix[float64]) {
 	}
 }
 
+// FIXME
+func (s Softmax) Derivative(x float64) float64 {
+	return math.NaN()
+}
+
+func (s Softmax) DerivativeMatrix(M matrix.Matrix[float64]) matrix.Matrix[float64] {
+	return M
+}
+
+//
+
 func (s Softmax) BackPropagate(z float64) float64 {
 	return math.NaN()
 }
