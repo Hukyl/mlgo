@@ -55,6 +55,7 @@ var activationMap = map[string]func() ActivationFunction{
 	"Linear":         func() ActivationFunction { return Linear{} },
 	"Sigmoid":        func() ActivationFunction { return Sigmoid{} },
 	"ReLU":           func() ActivationFunction { return ReLU{} },
+	"SELU":           func() ActivationFunction { return SELU{} },
 	"Softmax":        func() ActivationFunction { return Softmax{} },
 	"SoftmaxWithCCE": func() ActivationFunction { return SoftmaxWithCCE{} },
 }
