@@ -27,8 +27,8 @@ type NeuralNetwork interface {
 
 	// Training functions
 	ComputeCost(yHat, Y Matrix[float64]) float64
-	ForwardPropagate(X Matrix[float64]) []Matrix[float64]
-	BackPropagate(Y Matrix[float64], inputCache []Matrix[float64], parameters utils.NeuralNetworkParameters)
+	ForwardPropagate(X Matrix[float64]) (inputCache [][2]Matrix[float64])
+	BackPropagate(Y Matrix[float64], inputCache [][2]Matrix[float64], parameters utils.NeuralNetworkParameters)
 
 	// Prediction functions
 	Predict(X Matrix[float64]) (Y Matrix[float64])
@@ -54,7 +54,8 @@ func (n *nn) Predict(X Matrix[float64]) Matrix[float64] {
 	Y := X
 	for _, l := range n.layers {
 		if !l.IsTraining() {
-			Y, _ = l.ForwardPropagate(Y)
+			output, _ := l.ForwardPropagate(Y)
+			Y = output[1]
 		}
 	}
 	return Y
@@ -84,12 +85,12 @@ func (n *nn) validateTrainSamples(X, Y []Matrix[float64]) error {
 //
 // Returns slice, with size of (N layers)+1, where [0] is the input to the network,
 // and each element is the result of propagation through the next layer.
-func (n *nn) ForwardPropagate(X Matrix[float64]) []Matrix[float64] {
-	inputCache := make([]Matrix[float64], len(n.layers)+1)
-	inputCache[0] = X
+func (n *nn) ForwardPropagate(X Matrix[float64]) [][2]Matrix[float64] {
+	inputCache := make([][2]Matrix[float64], len(n.layers)+1)
+	inputCache[0] = [2]Matrix[float64]{X, X}
 
 	for j, layer := range n.layers {
-		soFar, _ := layer.ForwardPropagate(inputCache[j])
+		soFar, _ := layer.ForwardPropagate(inputCache[j][1])
 		inputCache[j+1] = soFar
 	}
 	return inputCache
@@ -104,12 +105,12 @@ func (n *nn) ForwardPropagate(X Matrix[float64]) []Matrix[float64] {
 //	L1 -> dL/dZ1 = dL/dA3 * dA3/dZ3 * dZ3/dA2 * dA2/dZ2 * dZ2/dA1 * dA1/dZ1
 //	L2 -> dL/dZ2 = dL/dA3 * dA3/dZ3 * dZ3/dA2 * dA2/dZ2
 //	L3 -> dL/dZ3 = dL/dA3 * dA3/dZ3
-func (n *nn) BackPropagate(Y Matrix[float64], inputCache []Matrix[float64], parameters utils.NeuralNetworkParameters) {
+func (n *nn) BackPropagate(Y Matrix[float64], inputCache [][2]Matrix[float64], parameters utils.NeuralNetworkParameters) {
 	layerCount := len(n.layers)
 
 	var backPropagation Matrix[float64]
 
-	yHat := inputCache[layerCount]
+	yHat := inputCache[layerCount][1]
 	dL := n.LossFunction.ApplyDerivativeMatrix(Y, yHat)
 
 	backPropagation = dL
@@ -118,7 +119,7 @@ func (n *nn) BackPropagate(Y Matrix[float64], inputCache []Matrix[float64], para
 		layer := n.layers[j]
 		backPropagation = layer.BackPropagate(
 			backPropagation,
-			inputCache[j],
+			inputCache[j][1],
 			inputCache[j+1],
 			parameters,
 		)
@@ -149,43 +150,37 @@ func (n *nn) Train(X, Y []Matrix[float64], parameters utils.NeuralNetworkParamet
 		return err
 	}
 	parameters.Validate()
-
 	parameters.ResetEpoch()
 
 	DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, "start.json"))
 	for e := 0; e < int(parameters.EpochCount); e++ {
+		cost := float64(0.0)
+		accuracy := float64(0.0)
+
 		for i := 0; i < len(X); i++ {
 			X_batch, Y_batch := X[i], Y[i]
 
 			// Forward propagate and store inputs
 			inputCache := n.ForwardPropagate(X_batch)
 
-			// Updating the weights
-			n.BackPropagate(Y_batch, inputCache, parameters)
-		}
-
-		cost := float64(0.0)
-		accuracy := float64(0.0)
-		for i := 0; i < len(X); i++ {
-			X_batch, Y_batch := X[i], Y[i]
-
-			prediction := n.Predict(X_batch)
+			// Calculate cost and accuracy
+			prediction := inputCache[len(inputCache)-1][1]
 			cost += n.ComputeCost(prediction, Y_batch) / float64(len(X))
 			if math.IsNaN(cost) || math.IsInf(cost, 0) || cost == 0.0 {
 				return errors.New("cost is an invalid number")
 			}
-
 			accuracy += parameters.AccuracyMetric.Calculate(Y_batch, prediction) / float64(len(X))
+
+			// Updating the weights
+			n.BackPropagate(Y_batch, inputCache, parameters)
 		}
-		log.Printf("Epoch %d/%d, cost: %v, accuracy: %v\n", e+1, parameters.EpochCount, cost, accuracy)
+		log.Printf("Epoch %d/%d, avg_cost: %-10.5g avg_accuracy: %-10.5g\n", e+1, parameters.EpochCount, cost, accuracy)
 
 		parameters.IncrementEpoch()
 		DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, fmt.Sprintf("epoch_%d.json", e+1)))
 	}
-	DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, "finish.json"))
 
 	parameters.ResetEpoch()
-
 	return nil
 }
 

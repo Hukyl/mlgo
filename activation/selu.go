@@ -37,14 +37,3 @@ func (s SELU) DerivativeMatrix(m Matrix[float64]) Matrix[float64] {
 	ApplyByElement(result, s.Derivative)
 	return result
 }
-
-func (s SELU) BackPropagate(z float64) float64 {
-	if z >= 0 {
-		return lambda * z
-	}
-	return (z + lambda*alpha) * z
-}
-
-func (s SELU) BackPropagateMatrix(m Matrix[float64]) {
-	ApplyByElement(m, s.BackPropagate)
-}

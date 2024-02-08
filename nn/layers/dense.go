@@ -3,6 +3,8 @@ package layers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"math"
 	"reflect"
 	"strconv"
 
@@ -41,21 +43,28 @@ func (d *dense) IsTraining() bool {
 	return false
 }
 
-// ForwardPropagate applies the weights and the bias of given dense to produce
-// an output.
+// ForwardPropagate applies produces two matrices as a result of forward propagation on X:
+//   - A linear combination of the weights, inputs and biases (i.e. W*X + b)
+//   - The actual output of the layer, which is activated linear combination (i.e. activation(W*X + b))
+//
 // Input has to be of d.InputSize() size, otherwise error is returned.
-func (d *dense) ForwardPropagate(X Matrix[float64]) (Matrix[float64], error) {
+func (d *dense) ForwardPropagate(X Matrix[float64]) (output [2]Matrix[float64], err error) {
 	linearCombination, err := d.Weights().Multiply(X)
 	if err != nil {
-		return nil, err
+		return output, err
 	}
 	broadcastedBias, _ := d.Bias().Multiply(NewOnesMatrix(1, X.ColumnCount()))
-	result, err := linearCombination.Add(broadcastedBias)
+	linearCombination, err = linearCombination.Add(broadcastedBias)
 	if err != nil {
-		return nil, err
+		return output, err
 	}
-	d.Activation().ApplyMatrix(result)
-	return result, nil
+	output[0] = linearCombination
+
+	activatedLinearCombination := linearCombination.DeepCopy()
+	d.Activation().ApplyMatrix(activatedLinearCombination)
+	output[1] = activatedLinearCombination
+
+	return output, nil
 }
 
 // BackPropagate applies derivatives of the input and activation function to
@@ -99,9 +108,8 @@ func (d *dense) ForwardPropagate(X Matrix[float64]) (Matrix[float64], error) {
 //   - produce the propagation base for the next layer.
 //
 //     thisLayerPropagation = W.T() @ dLdZ
-func (d *dense) BackPropagate(nextLayerPropagation, X, A Matrix[float64], parameters utils.NeuralNetworkParameters) Matrix[float64] {
-	dAdZ := A.DeepCopy() // derivative for activation function
-	d.Activation().BackPropagateMatrix(dAdZ)
+func (d *dense) BackPropagate(nextLayerPropagation, X Matrix[float64], A [2]Matrix[float64], parameters utils.NeuralNetworkParameters) Matrix[float64] {
+	dAdZ := d.Activation().DerivativeMatrix(A[0]) // derivative for activation function
 
 	dLdZ, _ := nextLayerPropagation.MultiplyElementwise(dAdZ)
 	d.updateWeights(dLdZ, X, parameters)
@@ -121,10 +129,19 @@ func (d *dense) updateWeights(dLdZ, input Matrix[float64], parameters utils.Neur
 
 	columns := float64(input.ColumnCount())
 
+	if w, _ := dW.At(0, 0); math.IsNaN(w) {
+		log.Printf("NaN dW")
+	}
 	decayed_dW, _ := dW.MultiplyByScalar(1 / columns).Add(
 		d.weights.MultiplyByScalar(parameters.WeightDecay),
 	)
+	if w, _ := decayed_dW.At(0, 0); math.IsNaN(w) {
+		log.Printf("NaN decayed_dW")
+	}
 	d.weights, _ = d.Weights().Add(decayed_dW.MultiplyByScalar(-parameters.LearningRate()))
+	if w, _ := d.weights.At(0, 0); math.IsNaN(w) {
+		log.Printf("NaN weight")
+	}
 
 	decayed_db, _ := db.MultiplyByScalar(1 / columns).Add(
 		d.bias.MultiplyByScalar(parameters.WeightDecay),

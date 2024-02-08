@@ -19,9 +19,3 @@ func (l Linear) Derivative(x float64) float64 {
 func (l Linear) DerivativeMatrix(m Matrix[float64]) Matrix[float64] {
 	return NewOnesMatrix(m.RowCount(), m.ColumnCount())
 }
-
-func (l Linear) BackPropagate(z float64) float64 {
-	return z // d/dz = 1
-}
-
-func (l Linear) BackPropagateMatrix(M Matrix[float64]) {}

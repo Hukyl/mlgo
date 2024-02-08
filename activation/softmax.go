@@ -3,19 +3,19 @@ package activation
 import (
 	"math"
 
-	"github.com/Hukyl/mlgo/matrix"
+	. "github.com/Hukyl/mlgo/matrix"
 )
 
 // Softmax is a probability-generative vector function.
 //
-// As it is a *vector* function, Apply() and BackPropagate() methods return NaN
+// As it is a *vector* function, Apply() and Derivative() methods return NaN
 type Softmax struct{}
 
 func (s Softmax) Apply(z float64) float64 {
 	return math.NaN()
 }
 
-func (s Softmax) ApplyMatrix(M matrix.Matrix[float64]) {
+func (s Softmax) ApplyMatrix(M Matrix[float64]) {
 	for j := 0; j < M.ColumnCount(); j++ {
 		exponents := make([]float64, M.RowCount())
 		sumExponents := float64(0.0)
@@ -30,35 +30,26 @@ func (s Softmax) ApplyMatrix(M matrix.Matrix[float64]) {
 	}
 }
 
-// FIXME
 func (s Softmax) Derivative(x float64) float64 {
 	return math.NaN()
 }
 
-func (s Softmax) DerivativeMatrix(M matrix.Matrix[float64]) matrix.Matrix[float64] {
-	return M
-}
-
-//
-
-func (s Softmax) BackPropagate(z float64) float64 {
-	return math.NaN()
-}
-
-func (s Softmax) BackPropagateMatrix(M matrix.Matrix[float64]) {
-	M.Broadcast(M.RowCount(), M.RowCount())
-	for j := 0; j < M.ColumnCount(); j++ {
-		s_j, _ := M.At(j, j)
-		for i := 0; i < M.RowCount(); i++ {
-			value, _ := M.At(i, j)
-			if i == j {
-				value *= 1 - s_j
-			} else {
-				value *= -s_j
-			}
-			M.Set(i, j, value)
-		}
-	}
+// FIXME
+func (s Softmax) DerivativeMatrix(M Matrix[float64]) Matrix[float64] {
+	return nil
+	// M.Broadcast(M.RowCount(), M.RowCount())
+	// for j := 0; j < M.ColumnCount(); j++ {
+	// 	s_j, _ := M.At(j, j)
+	// 	for i := 0; i < M.RowCount(); i++ {
+	// 		value, _ := M.At(i, j)
+	// 		if i == j {
+	// 			value *= 1 - s_j
+	// 		} else {
+	// 			value *= -s_j
+	// 		}
+	// 		M.Set(i, j, value)
+	// 	}
+	// }
 }
 
 // SoftmaxWithCCE is an activation function, which is used only together with categorical
@@ -68,9 +59,11 @@ func (s Softmax) BackPropagateMatrix(M matrix.Matrix[float64]) {
 //
 // IMPORTANT: should be only used with CategoricalCrossEntropyLossWithSoftmax loss function!
 //
-// As it is a *vector* function, Apply() and BackPropagate() methods return NaN
+// As it is a *vector* function, Apply() and Derivative() methods return NaN
 type SoftmaxWithCCE struct {
 	Softmax
 }
 
-func (s SoftmaxWithCCE) BackPropagateMatrix(M matrix.Matrix[float64]) {}
+func (s SoftmaxWithCCE) DerivativeMatrix(M Matrix[float64]) Matrix[float64] {
+	return NewOnesMatrix(M.RowCount(), M.ColumnCount())
+}

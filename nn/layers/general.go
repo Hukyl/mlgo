@@ -23,7 +23,11 @@ type Layer interface {
 	Bias() Matrix[float64]
 	Activation() activation.ActivationFunction
 
-	ForwardPropagate(X Matrix[float64]) (Y Matrix[float64], err error)
-	BackPropagate(nextLayerPropagation, input, output Matrix[float64], parameters utils.NeuralNetworkParameters) Matrix[float64]
+	ForwardPropagate(X Matrix[float64]) (Y [2]Matrix[float64], err error)
+	BackPropagate(
+		nextLayerPropagation, input Matrix[float64],
+		output [2]Matrix[float64],
+		parameters utils.NeuralNetworkParameters,
+	) Matrix[float64]
 	updateWeights(nextLayerPropagation, input Matrix[float64], parameters utils.NeuralNetworkParameters)
 }

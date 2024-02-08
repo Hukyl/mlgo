@@ -26,11 +26,3 @@ func (s Sigmoid) DerivativeMatrix(M matrix.Matrix[float64]) matrix.Matrix[float6
 	matrix.ApplyByElement(result, s.Derivative)
 	return result
 }
-
-func (s Sigmoid) BackPropagate(z float64) float64 {
-	return z * (1 - z) // d(sigmoid(z))/dz = sigmoid(z) * (1 - sigmoid(z))
-}
-
-func (s Sigmoid) BackPropagateMatrix(M matrix.Matrix[float64]) {
-	matrix.ApplyByElement(M, s.BackPropagate)
-}

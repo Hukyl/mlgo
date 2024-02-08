@@ -41,32 +41,34 @@ func (d *dropout) Activation() activation.ActivationFunction {
 
 /***************************************************************************/
 
-func (d *dropout) ForwardPropagate(X Matrix[float64]) (Y Matrix[float64], err error) {
+func (d *dropout) ForwardPropagate(X Matrix[float64]) (Y [2]Matrix[float64], err error) {
 	keepProb := 1.0 - d.rate
-	Y = uniformMatrix(X.Size(), 0.0, 1.0)
+	output := uniformMatrix(X.Size(), 0.0, 1.0)
 
 	wg := sync.WaitGroup{}
-	wg.Add(Y.ColumnCount())
-	for j := 0; j < Y.ColumnCount(); j++ {
+	wg.Add(output.ColumnCount())
+	for j := 0; j < output.ColumnCount(); j++ {
 		go func(j int) {
 			defer wg.Done()
 			for i := 0; i < d.inputSize; i++ {
-				prob, _ := Y.At(i, j)
+				prob, _ := output.At(i, j)
 				if prob < keepProb {
 					v, _ := X.At(i, j)
-					Y.Set(i, j, v)
+					output.Set(i, j, v)
 				} else {
-					Y.Set(i, j, 0.0)
+					output.Set(i, j, 0.0)
 				}
 			}
 		}(j)
 	}
 	wg.Wait()
 
+	Y = [2]Matrix[float64]{output, output}
+
 	return Y, nil
 }
 
-func (d *dropout) BackPropagate(nextLayerPropagation, X, A Matrix[float64], parameters utils.NeuralNetworkParameters) Matrix[float64] {
+func (d *dropout) BackPropagate(nextLayerPropagation, X Matrix[float64], A [2]Matrix[float64], parameters utils.NeuralNetworkParameters) Matrix[float64] {
 	return nextLayerPropagation
 }
 
