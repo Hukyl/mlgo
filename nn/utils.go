@@ -49,17 +49,3 @@ func LoadNeuralNetwork(path string) (NeuralNetwork, error) {
 func NewNeuralNetwork(layers []layers.Layer, lossFunction loss.LossFunction[float64]) NeuralNetwork {
 	return &nn{layers: layers, LossFunction: lossFunction}
 }
-
-// func NewRandomNeuralNetwork(
-// 	inputSize []int,
-// 	activationFunctions []activation.ActivationFunction,
-// 	lossFunction loss.LossFunction[float64],
-// 	wi WeightInitialization,
-// ) NeuralNetwork {
-// 	layers := make([]layers.Layer, 0, len(inputSize)-1)
-// 	for j := 1; j < len(inputSize); j++ {
-// 		layer := NewRandomizedLayer([2]int{inputSize[j], inputSize[j-1]}, activationFunctions[j-1], wi)
-// 		layers = append(layers, layer)
-// 	}
-// 	return &nn{layers: layers, LossFunction: lossFunction}
-// }
