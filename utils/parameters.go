@@ -9,6 +9,11 @@ import (
 const defaultEpochCount = 5
 const defaultLearningRate = 0.01
 
+type BackupParameters struct {
+	ToCreate bool
+	Path     string
+}
+
 type NeuralNetworkParameters struct {
 	currentEpoch uint64
 	EpochCount   uint64
@@ -20,7 +25,7 @@ type NeuralNetworkParameters struct {
 
 	AccuracyMetric metric.Metric
 
-	DumpPath string
+	Backups BackupParameters
 }
 
 func (nnp NeuralNetworkParameters) LearningRate() float64 {

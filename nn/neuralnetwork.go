@@ -152,7 +152,6 @@ func (n *nn) Train(X, Y []Matrix[float64], parameters utils.NeuralNetworkParamet
 	parameters.Validate()
 	parameters.ResetEpoch()
 
-	DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, "start.json"))
 	for e := 0; e < int(parameters.EpochCount); e++ {
 		cost := float64(0.0)
 		accuracy := float64(0.0)
@@ -177,7 +176,16 @@ func (n *nn) Train(X, Y []Matrix[float64], parameters utils.NeuralNetworkParamet
 		log.Printf("Epoch %d/%d, avg_cost: %-10.5g avg_accuracy: %-10.5g\n", e+1, parameters.EpochCount, cost, accuracy)
 
 		parameters.IncrementEpoch()
-		DumpNeuralNetwork(n, filepath.Join(parameters.DumpPath, fmt.Sprintf("epoch_%d.json", e+1)))
+		if parameters.Backups.ToCreate {
+			DumpNeuralNetwork(
+				n,
+				filepath.Join(
+					parameters.Backups.Path,
+					fmt.Sprintf("epoch_%d.json", e+1),
+				),
+			)
+		}
+
 	}
 
 	parameters.ResetEpoch()
