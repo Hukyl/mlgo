@@ -9,7 +9,7 @@ import (
 )
 
 type CategoricalCrossEntropyLoss[T Float] struct {
-	LabelSmoothingClip float64
+	Epsilon float64
 }
 
 func (l CategoricalCrossEntropyLoss[T]) Apply(y, yHat T) T {
@@ -24,7 +24,11 @@ func (l CategoricalCrossEntropyLoss[T]) ApplyMatrix(y Matrix[T], yHat Matrix[T])
 		for i := 0; i < y.RowCount(); i++ {
 			yValue, _ := y.At(i, j)
 			yHatValue, _ := yHat.At(i, j)
-			sum += -yValue * T(math.Log(float64(yHatValue)))
+			// In case yHatValue is close to 0
+			sum += -yValue * T(math.Log(math.Max(
+				float64(yHatValue),
+				l.Epsilon/float64(y.ColumnCount()*10),
+			)))
 		}
 
 		result.Set(0, j, sum)
@@ -33,14 +37,14 @@ func (l CategoricalCrossEntropyLoss[T]) ApplyMatrix(y Matrix[T], yHat Matrix[T])
 }
 
 func (l CategoricalCrossEntropyLoss[T]) ApplyDerivative(y, yHat T) T {
-	return yHat - y
+	return -y * T(math.Log(math.Max(float64(yHat), l.Epsilon)))
 }
 
 func (l CategoricalCrossEntropyLoss[T]) ApplyDerivativeMatrix(y Matrix[T], yHat Matrix[T]) Matrix[T] {
 	smoothedLabel := Clip(
 		y,
-		T(l.LabelSmoothingClip)/T(y.ColumnCount()),
-		1-T(l.LabelSmoothingClip),
+		T(l.Epsilon)/T(y.ColumnCount()),
+		1-T(l.Epsilon),
 	)
 	denominator := yHat.MultiplyByScalar(-1)
 	ApplyByElement(denominator, func(x T) T { return 1 / x })
@@ -64,8 +68,8 @@ type CCELossWithSoftmax[T Float] struct {
 func (l CCELossWithSoftmax[T]) ApplyDerivativeMatrix(y Matrix[T], yHat Matrix[T]) Matrix[T] {
 	smoothedLabel := Clip(
 		y,
-		T(l.LabelSmoothingClip)/T(y.ColumnCount()),
-		1-T(l.LabelSmoothingClip),
+		T(l.Epsilon)/T(y.ColumnCount()),
+		1-T(l.Epsilon),
 	)
 	result, _ := yHat.Add(smoothedLabel.MultiplyByScalar(-1))
 	return result
