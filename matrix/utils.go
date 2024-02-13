@@ -7,6 +7,9 @@ import (
 	. "golang.org/x/exp/constraints"
 )
 
+// NewMatrix returns a matrix implementation using the slice data.
+//
+// if the data is empty, or column count is incosistnent, returns an error,
 func NewMatrix[T Signed | Float](data [][]T) (Matrix[T], error) {
 	if len(data) == 0 {
 		return nil, errors.New("at least one row")
@@ -21,6 +24,7 @@ func NewMatrix[T Signed | Float](data [][]T) (Matrix[T], error) {
 	return m, nil
 }
 
+// NewZeroMatrix returns a matrix implementation filled with zeros with required size.
 func NewZeroMatrix[T Signed | Float](rowCount int, columnCount int) Matrix[T] {
 	m := new(matrix[T])
 	m.data = make([][]T, rowCount)
@@ -30,6 +34,7 @@ func NewZeroMatrix[T Signed | Float](rowCount int, columnCount int) Matrix[T] {
 	return m
 }
 
+// NewOnesMatrix returns a matrix implementation filled with ones with required size.
 func NewOnesMatrix(rowCount int, columnCount int) Matrix[float64] {
 	m := NewZeroMatrix[float64](rowCount, columnCount)
 	for i := 0; i < rowCount; i++ {
@@ -40,6 +45,7 @@ func NewOnesMatrix(rowCount int, columnCount int) Matrix[float64] {
 	return m
 }
 
+// IdentityMatrix returns a sqaure identity matrix implementation.
 func IdentityMatrix(rowCount int) Matrix[float64] {
 	m := NewZeroMatrix[float64](rowCount, rowCount)
 	for i := 0; i < rowCount; i++ {
@@ -50,6 +56,9 @@ func IdentityMatrix(rowCount int) Matrix[float64] {
 
 /****************************************************************************/
 
+// ApplyByElement applies some function elementwise to the matrix.
+// This opeartion changes the matrix, so consider using Matrix.Deepcopy()
+// depending on your needs.
 func ApplyByElement[T Signed | Float](M Matrix[T], f func(T) T) {
 	var value T
 	for i := 0; i < M.RowCount(); i++ {
@@ -60,6 +69,13 @@ func ApplyByElement[T Signed | Float](M Matrix[T], f func(T) T) {
 	}
 }
 
+// Clip clips all the values in the matrix using lower and upper bound.
+//
+//	 if value > upper {
+//		value = upper
+//	 } else if value < lower {
+//		value = lower
+//	 }
 func Clip[T Signed | Float](M Matrix[T], lower, upper T) Matrix[T] {
 	result := M.DeepCopy()
 

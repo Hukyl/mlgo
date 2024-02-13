@@ -6,9 +6,18 @@ import (
 	. "github.com/Hukyl/mlgo/matrix"
 )
 
-// Softmax is a probability-generative vector function.
+// Softmax is a probability-generative vector activation function, i.e.
+// generates probabilities from the input matrix. The number of classes
+// is the row count of the input matrix, and columns are treated as separate
+// outputs of the batch.
 //
-// As it is a *vector* function, Apply() and Derivative() methods return NaN
+//	Softmax(x)_j = exp(x_j) / sum(x_i, i ∈ [1, classCount])
+//
+// As Softmax is a *vector* function, Apply() and Derivative() methods return NaN.
+//
+// Due to implementation of the matrix class, and the fact that dSoftmax/dx returns
+// a Jacobian matrix (i.e. a 3D-tensor for a list of vecotrs),
+// the DerivativeMatrix() is not implemented and has to be overriden.
 type Softmax struct{}
 
 func (s Softmax) Apply(z float64) float64 {
@@ -34,32 +43,18 @@ func (s Softmax) Derivative(x float64) float64 {
 	return math.NaN()
 }
 
-// FIXME
 func (s Softmax) DerivativeMatrix(M Matrix[float64]) Matrix[float64] {
-	return nil
-	// M.Broadcast(M.RowCount(), M.RowCount())
-	// for j := 0; j < M.ColumnCount(); j++ {
-	// 	s_j, _ := M.At(j, j)
-	// 	for i := 0; i < M.RowCount(); i++ {
-	// 		value, _ := M.At(i, j)
-	// 		if i == j {
-	// 			value *= 1 - s_j
-	// 		} else {
-	// 			value *= -s_j
-	// 		}
-	// 		M.Set(i, j, value)
-	// 	}
-	// }
+	panic("not implemented")
 }
 
 // SoftmaxWithCCE is an activation function, which is used only together with categorical
 // cross-entropy loss. The main difference between this function and Softmax is that
-// it does not produce a proper back propagation derivative, but instead relies fully on
-// categorical cross-entropy loss function.
+// it does not produce a proper derivative, but instead relies fully on
+// the derivative of categorical cross-entropy loss function.
 //
 // IMPORTANT: should be only used with CategoricalCrossEntropyLossWithSoftmax loss function!
 //
-// As it is a *vector* function, Apply() and Derivative() methods return NaN
+// As SoftmaxWithCCE is a *vector* function, Apply() and Derivative() methods return NaN.
 type SoftmaxWithCCE struct {
 	Softmax
 }

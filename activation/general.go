@@ -1,3 +1,8 @@
+// Package activation containts the list of all
+// activation functions for layers of the neural network.
+//
+// Activation fucnton are applied to the output of the layer (i.e. W*X + b)
+// to enhance its prediction capability.
 package activation
 
 import (
@@ -40,6 +45,8 @@ var activationMap = map[string]func() ActivationFunction{
 	"SoftmaxWithCCE": func() ActivationFunction { return SoftmaxWithCCE{} },
 }
 
+// DynamicActivation returns the activation function based on the name.
+// Identical to importing and initializing the activation function directly.
 func DynamicActivation(activationName string) (ActivationFunction, error) {
 	f, ok := activationMap[activationName]
 	if !ok {

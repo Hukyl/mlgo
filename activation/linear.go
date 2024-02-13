@@ -4,6 +4,10 @@ import (
 	. "github.com/Hukyl/mlgo/matrix"
 )
 
+// Linear is a linear activation function, which does not modify the input.
+//
+//	Linear(x) = x
+//	dLinear/dx = 1
 type Linear struct{}
 
 func (l Linear) Apply(x float64) float64 {

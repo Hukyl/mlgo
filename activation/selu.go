@@ -11,6 +11,13 @@ const alpha = 1.6733
 
 // Scaled Exponential Linear Units, or SELUs, are activation functions
 // that induce self-normalizing properties.
+//
+//	SELU(x) = λ*x if x >= 0 else λ*α*(exp(x) - 1)
+//	dSELU/dx = λ if x >= 0 else λ*α*exp(x)
+//
+// Where:
+//
+//	λ ≈ 1.0507, α ≈ 1.6733
 type SELU struct{}
 
 func (s SELU) Apply(x float64) float64 {

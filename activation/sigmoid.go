@@ -6,6 +6,11 @@ import (
 	"github.com/Hukyl/mlgo/matrix"
 )
 
+// Sigmoid is a continuous non-linear activation function which maps
+// the rational numbers to [0;1] range.
+//
+//	Sigmoid(x) = 1 / (1 + exp(-x))
+//	dSigmoid/dx = Sigmoid(x) * (1 - Sigmoid(x))
 type Sigmoid struct{}
 
 func (s Sigmoid) Apply(z float64) float64 {

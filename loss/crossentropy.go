@@ -3,11 +3,13 @@ package loss
 import (
 	"math"
 
-	. "golang.org/x/exp/constraints"
-
 	. "github.com/Hukyl/mlgo/matrix"
+	. "golang.org/x/exp/constraints"
 )
 
+// CategoricalCrossEntropyLoss is a loss for comparing two probability distributions.
+//
+//	CCE(pred, label) = -label*Log(pred)
 type CategoricalCrossEntropyLoss[T Float] struct {
 	Epsilon float64
 }
@@ -52,9 +54,7 @@ func (l CategoricalCrossEntropyLoss[T]) ApplyDerivativeMatrix(y Matrix[T], yHat 
 	return result
 }
 
-/************************************************************************/
-
-// CategoricalCrossEntropyLossWithSoftmax is a loss function which is used to determine
+// CCELossWithSoftmax is a loss function which is used to determine
 // the amount of error the weights should be corrected by, i.e. the cost.
 //
 // As CCE is often combined with Softmax, used in the last layer, this loss function
@@ -74,5 +74,3 @@ func (l CCELossWithSoftmax[T]) ApplyDerivativeMatrix(y Matrix[T], yHat Matrix[T]
 	result, _ := yHat.Add(smoothedLabel.MultiplyByScalar(-1))
 	return result
 }
-
-/************************************************************************/

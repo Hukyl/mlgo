@@ -6,11 +6,16 @@ import (
 	"strconv"
 )
 
-// MnistDataset reads the CSV files for MNIST dataset, in the form:
-// X, Y, err
+// MnistDataset reads the CSV files for MNIST dataset.
+//
+// Accepts a path to the .csv file, which has to be in format:
+// N rows, first column is the label, next 784 columns - pixels of the image in range from 0 to 255.
+//
+// Outputs a list of pixels, where each entry is a separate image and
+// a slice of labels corresponding to the images.
 //
 // Each slice of X represents a whole 28x28 image with values ranging from 0 to 255, i.e. length of 784.
-// In order to feed it to the neural network, outputs have to be transposed and one-hot encoded.
+// In order to feed it to the neural network, outputs have to be transposed and labels must be one-hot encoded.
 func MnistDataset(filename string) ([][]float64, []float64, error) {
 	// Open the CSV file
 	file, err := os.Open(filename)

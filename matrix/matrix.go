@@ -1,3 +1,5 @@
+// Package matrix provides Matrix interface and matrix implementation
+// along with a few util functions.
 package matrix
 
 import (
@@ -11,6 +13,60 @@ import (
 	. "golang.org/x/exp/constraints"
 )
 
+// Matrix is an interface for matrix implementations.
+//
+// Implementations have to implement Stringer and Marshaler/Unmarshaler.
+//
+// Size returns the dimensions of the matrix in the format [2]{rows, columns}
+//
+// RowCount returns the row number (i.e. Size()[0])
+//
+// ColumnCount returns the column number (i.e. Size()[1])
+//
+// AreSameSize compares Size() of two matrices by dimension.
+//
+// Broadcast broadcasts the matrix to the desired size. This is implemented
+// by copying the values in existing rows and columns to fit the new.
+//
+//	var M Matrix[int]  // let it hold 1x1 matrix with value 3.
+//	fmt.Println(M.Broadcast(2, 3))  // [ [3, 3, 3], [3, 3, 3] ]
+//
+// Equals compares to matrices by exact value. Returns false on incompatible
+// matrices sizes. Depending on the implementation, comparisons can be exact or
+// using some epsilon error.
+//
+// At gets the value at given indices. On the counterpart to math notation,
+// indexing starts at 0.
+//
+// Set sets the value at given indices. Indexing starts at 0.
+//
+// Add adds two matrices in math manner, elementwise. Returns an error
+// if the matrices are non-conformable.
+//
+// AddScalar add a scalar to each element of the matrix. Equivalent to
+// Add(M.Broadcast(rows, columns)), where M is a 1x1 matrix with given scalar.
+//
+// Multiply multiplies two matrices in the math manner. If the matrices are
+// non-conformable (columns_1 != rows_2), returns an error.
+//
+// MultiplyByScalar multiples the matrix by a scalar, i.e. multiply each
+// element by a given scalar.
+//
+// MultiplyElementwise multiplies two matrices elementwise. If matrices
+// are not of the same size, returns an error.
+//
+// T transposes the matrix by the main diagonal.
+//
+// Minor returns the minor from a certain element, returning
+// (rows-1)x(columns-1) matrix. Returns error if invalid indices.
+//
+// Determinant returns the determinant of the matrix.
+//
+// Inverse returns the inverse matrix for a given matrix.
+// Only possible for square matrices. If the determinant is equal
+// to zero, returns an error.
+//
+// Copy and Deepcopy copy the matrix to a new location.
 type Matrix[T Signed | Float] interface {
 	json.Marshaler
 	json.Unmarshaler
