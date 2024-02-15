@@ -25,6 +25,7 @@ import (
 	"github.com/Hukyl/mlgo/metric"
 	"github.com/Hukyl/mlgo/nn"
 	"github.com/Hukyl/mlgo/nn/layers"
+    "github.com/Hukyl/mlgo/utils"
 )
 
 
@@ -57,13 +58,13 @@ func main() {
     )
 
     // Train your network
-	err = model.Train(X_train, Y_train, parameters)
+	err := model.Train(X_train, Y_train, parameters)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	Y_pred := model.Predict(X_train[0])
-	fmt.Println(parameters.AccuracyMetric.Calculate(Y_test[0], Y_pred))
+	fmt.Println(parameters.AccuracyMetric.Calculate(Y_train[0], Y_pred))
 }
 ```
 
