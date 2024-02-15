@@ -32,8 +32,6 @@ func oneHotEncodingToValues(m matrix.Matrix[float64]) []int {
 	return predictions
 }
 
-/***************************************************************/
-
 // CategoriacalAccuracy is a probabilistic accuracy metric, used to compare most probable
 // guess of a neural network to the neural network output. True labels must be presented as
 // one-hot encoded values.
@@ -62,8 +60,6 @@ func (c CategoricalAccuracy) Calculate(yTrue, yHat matrix.Matrix[float64]) float
 
 	return float64(correct) / float64(len(predictions))
 }
-
-/***************************************************************/
 
 // SparseCategoriacalAccuracy is a probabilistic accuracy metric, used to compare most probable
 // guess of a neural network to the neural network output. The only difference from

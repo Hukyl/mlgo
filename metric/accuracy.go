@@ -7,6 +7,17 @@ import (
 	"github.com/Hukyl/mlgo/matrix"
 )
 
+// Accuracy compares the prediction to the actual values.
+//
+// If Epsilon is provided, the check is performed to some level of accuracy.
+//
+//	diff := math.Abs(pred - label)
+//	if diff < Epsilon {
+//		correct++
+//	}
+//
+// Different columns are treated as different samples. The correct counter goes up
+// only if all the values per one prediction are equal to the label.
 type Accuracy struct {
 	Epsilon float64
 }

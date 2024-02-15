@@ -1,3 +1,4 @@
+// Package metric provides a set of metrics to calculate the accuracy of ANN predictions.
 package metric
 
 import "github.com/Hukyl/mlgo/matrix"
@@ -6,7 +7,8 @@ const DefaultEpsilon = 1e-5
 
 // Metric is an interface for calculating accuracies for the neural network output.
 //
-// Calculate accepts two matrices, of size {outputSize, sampleCount}.
+// Calculate accepts two matrices, of size {outputSize, sampleCount} to produce a single accuracy
+// result. If sampleCount > 1, the accuracy between different samples is averaged.
 //
 // Example:
 //

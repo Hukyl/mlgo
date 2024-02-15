@@ -1,3 +1,5 @@
+// Package nn provides neural network building blocks, as layers
+// and the general struct for ANN.
 package nn
 
 import (
@@ -18,6 +20,33 @@ import (
 	"github.com/Hukyl/mlgo/utils"
 )
 
+// NeuralNetwork is an interface for a general ANN.
+//
+// InputSize returns the dimensions of the input to the first layer.
+// Returned as [2]{rowCount, 1}, but in practice columnCount can also differ.
+//
+// OutputSize returns the dimensions of the output of the last layer.
+// Returned as [2]{rowCount, 1}, but in practice columnCount can also differ.
+//
+// ComputeCost uses the LossFunction of the last layer to compute cost, i.e. the error
+// of the prediction. Separate columns of y and yHat represent different samples,
+// and the cost is averaged between them.
+//
+// ForwardPropagate produces a slices of outputs for each layer. First element in array
+// for each slice item is the linear combination using weights and biases, the second -
+// linear combination passed through the activation function. The length of the returned
+// slice is numberOfLayers+1, as the 0th element is the initial input to the ANN.
+//
+//	item[0] = W*X + b
+//	item[1] = activation(item[0])
+//
+// BackPropagate uses the inputCache, produced by ForwardPropagate, to update the layers.
+// Utilizes parameters for the neural network.
+//
+// Predict produces ANN prediction for the given data. Equivalent to ForwardPropagate()[-1][1].
+//
+// Train uses training functions (ComputeCost, ForwardPropagate, BackPropagate) to update
+// the weights of the layers to decrease the cost and loss.
 type NeuralNetwork interface {
 	json.Marshaler
 	json.Unmarshaler

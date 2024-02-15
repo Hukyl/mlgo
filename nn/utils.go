@@ -50,8 +50,8 @@ func LoadNeuralNetwork(path string) (NeuralNetwork, error) {
 	return nn, nil
 }
 
-/************************************************************************/
-
+// NewNeuralNetwork produces an ANN based on layer slice and loss function applied to the \
+// last layer.
 func NewNeuralNetwork(layers []layers.Layer, lossFunction loss.LossFunction[float64]) NeuralNetwork {
 	return &nn{layers: layers, LossFunction: lossFunction}
 }

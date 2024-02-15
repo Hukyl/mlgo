@@ -10,6 +10,9 @@ import (
 	. "github.com/Hukyl/mlgo/matrix"
 )
 
+// NewDense produces a new fully-connected layer of neurons using given weights and biases.
+//
+// Returns error if weights and biases sizes are non-conformable.
 func NewDense(W, b Matrix[float64], a activation.ActivationFunction) (Layer, error) {
 	l := &dense{weights: W, bias: b, activation: a}
 	if b.Size()[0] != l.OutputSize()[0] {
@@ -18,6 +21,14 @@ func NewDense(W, b Matrix[float64], a activation.ActivationFunction) (Layer, err
 	return l, nil
 }
 
+// NewRandomDense produces a dense layer using a given weight initialization method.
+//
+// Beware that different weight initialization techniques are better suited for different
+// activation functions, for example:
+//   - ReLU - HeInitialization
+//   - Sigmoid - XavierUniformInitializations
+//
+// and so on.
 func NewRandomDense(weightSize [2]int, a activation.ActivationFunction, wi WeightInitialization) Layer {
 	W := NewZeroMatrix[float64](weightSize[1], weightSize[0])
 	for i := 0; i < weightSize[1]; i++ {
@@ -29,6 +40,11 @@ func NewRandomDense(weightSize [2]int, a activation.ActivationFunction, wi Weigh
 	return &dense{weights: W, bias: b, activation: a}
 }
 
+// NewDropout produces a dropout layer, which nullifies random neurons to reduce
+// overfitting of the model.
+//
+// Neurons are nullified at random with different neurons being deactivated in
+// different samples with some `rate`.
 func NewDropout(inputSize int, rate float64) Layer {
 	return &dropout{inputSize: inputSize, rate: rate}
 }
