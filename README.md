@@ -16,25 +16,25 @@ Welcome to mlgo, a Golang machine learning library crafted from derived mathemat
 package main
 
 import (
-	"fmt"
-	"log"
+    "fmt"
+    "log"
 
-	"github.com/Hukyl/mlgo/activation"
-	"github.com/Hukyl/mlgo/datasets"
-	"github.com/Hukyl/mlgo/loss"
-	"github.com/Hukyl/mlgo/metric"
-	"github.com/Hukyl/mlgo/nn"
-	"github.com/Hukyl/mlgo/nn/layers"
+    "github.com/Hukyl/mlgo/activation"
+    "github.com/Hukyl/mlgo/datasets"
+    "github.com/Hukyl/mlgo/loss"
+    "github.com/Hukyl/mlgo/metric"
+    "github.com/Hukyl/mlgo/nn"
+    "github.com/Hukyl/mlgo/nn/layers"
     "github.com/Hukyl/mlgo/utils"
 )
 
 
 func main() {
-	parameters := utils.NeuralNetworkParameters{
-		EpochCount:          30,
-		InitialLearningRate: 0.01,
+    parameters := utils.NeuralNetworkParameters{
+        EpochCount:          30,
+        InitialLearningRate: 0.01,
         AccuracyMetric:      metric.CategoricalAccuracy{},
-	}
+    }
 
     // Preprocess data
     X_train, Y_train := prepareData(datasets.MnistDataset("your/path"))
@@ -58,13 +58,13 @@ func main() {
     )
 
     // Train your network
-	err := model.Train(X_train, Y_train, parameters)
-	if err != nil {
-		log.Fatal(err)
-	}
+    err := model.Train(X_train, Y_train, parameters)
+    if err != nil {
+        log.Fatal(err)
+    }
 
-	Y_pred := model.Predict(X_train[0])
-	fmt.Println(parameters.AccuracyMetric.Calculate(Y_train[0], Y_pred))
+    Y_pred := model.Predict(X_train[0])
+    fmt.Println(parameters.AccuracyMetric.Calculate(Y_train[0], Y_pred))
 }
 ```
 
