@@ -2,6 +2,7 @@ package layers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -175,6 +176,7 @@ func (d *dense) MarshalJSON() ([]byte, error) {
 }
 
 func (d *dense) UnmarshalJSON(data []byte) error {
+	var err error
 	var v map[string]json.RawMessage
 
 	if err := json.Unmarshal(data, &v); err != nil {
@@ -183,17 +185,23 @@ func (d *dense) UnmarshalJSON(data []byte) error {
 
 	w, _ := NewMatrix([][]float64{{}})
 	if err := w.UnmarshalJSON(v["Weights"]); err != nil {
-		return err
+		return errors.Join(
+			errors.New("invalid weight initializing"),
+			err,
+		)
 	}
 	d.weights = w
 
 	b, _ := NewMatrix([][]float64{{}})
 	if err := b.UnmarshalJSON(v["Bias"]); err != nil {
-		return err
+		return errors.Join(
+			errors.New("invalid bias initializing"),
+			err,
+		)
 	}
 	d.bias = b
 
 	activationLiteral, _ := strconv.Unquote(string(v["Activation"]))
-	d.activation, _ = activation.DynamicActivation(activationLiteral)
-	return nil
+	d.activation, err = activation.DynamicActivation(activationLiteral)
+	return err // can return either actual error or nil
 }

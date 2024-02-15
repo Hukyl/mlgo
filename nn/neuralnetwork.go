@@ -177,13 +177,16 @@ func (n *nn) Train(X, Y []Matrix[float64], parameters utils.NeuralNetworkParamet
 
 		parameters.IncrementEpoch()
 		if parameters.Backups.ToCreate {
-			DumpNeuralNetwork(
+			err = DumpNeuralNetwork(
 				n,
 				filepath.Join(
 					parameters.Backups.Path,
 					fmt.Sprintf("epoch_%d.json", e+1),
 				),
 			)
+			if err != nil {
+				log.Printf("dump saving error: %s", err)
+			}
 		}
 
 	}
@@ -215,16 +218,16 @@ func (n *nn) MarshalJSON() ([]byte, error) {
 }
 
 func (n *nn) UnmarshalJSON(data []byte) error {
+	var err error
 	var v struct {
 		Layers       []json.RawMessage
 		LossFunction string
 	}
 	if err := json.Unmarshal(data, &v); err != nil {
-		return err
+		return errors.New("invalid general NN unmarshalling")
 	}
 	n.layers = make([]Layer, len(v.Layers))
 	for i, lData := range v.Layers {
-		var err error
 		var layer Layer
 		var layerType struct {
 			Type string
@@ -241,10 +244,16 @@ func (n *nn) UnmarshalJSON(data []byte) error {
 			err = layer.UnmarshalJSON(lData)
 		}
 		if err != nil {
-			return err
+			return errors.Join(
+				fmt.Errorf("error on parsing layer #%d", i+1),
+				err,
+			)
 		}
 		n.layers[i] = layer
 	}
-	n.LossFunction, _ = DynamicLoss[float64](v.LossFunction)
+	n.LossFunction, err = DynamicLoss[float64](v.LossFunction)
+	if err != nil {
+		return fmt.Errorf("invalid loss name: %s", v.LossFunction)
+	}
 	return nil
 }

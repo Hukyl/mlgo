@@ -23,10 +23,16 @@ func jsonifyObject(obj interface{}, path string) error {
 	return nil
 }
 
-func DumpNeuralNetwork(nn NeuralNetwork, path string) {
-	jsonifyObject(nn, path)
+// DumpNeuralNetwork dumps the JSON represantation to a file given by a path.
+//
+// The creating of the file is managed by os.Create function.
+func DumpNeuralNetwork(nn NeuralNetwork, path string) error {
+	return jsonifyObject(nn, path)
 }
 
+// LoadNeuralNetwork loads ANN from a JSON file given by path.
+//
+// Errors are returned due to any errors in the unmarshalling of any of the layers.
 func LoadNeuralNetwork(path string) (NeuralNetwork, error) {
 	fileContent, err := os.ReadFile(path)
 	if err != nil {

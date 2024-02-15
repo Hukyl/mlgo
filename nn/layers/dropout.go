@@ -2,6 +2,7 @@ package layers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -99,7 +100,10 @@ func (d *dropout) UnmarshalJSON(data []byte) error {
 	}
 	err := json.Unmarshal(data, &v)
 	if err != nil {
-		return err
+		return errors.Join(
+			fmt.Errorf("invalid dropout layer"),
+			err,
+		)
 	}
 	d.inputSize = v.InputSize
 	d.rate = v.Rate
