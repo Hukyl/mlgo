@@ -37,7 +37,7 @@ func main() {
     }
 
     // Preprocess data
-    X_train, Y_train := prepareData(datasets.MnistDataset("your/path"))
+    X_train, Y_train := prepareData(datasets.MnistDataset("your/path/file.csv"))
 
     // Define the structure of the layers
     l := []layers.Layer{
@@ -65,6 +65,7 @@ func main() {
 
     Y_pred := model.Predict(X_train[0])
     fmt.Println(parameters.AccuracyMetric.Calculate(Y_train[0], Y_pred))
+    nn.DumpNeuralNetwork(model, "path/to/dump.json")
 }
 ```
 
