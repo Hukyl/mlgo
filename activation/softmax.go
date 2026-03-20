@@ -26,11 +26,20 @@ func (s Softmax) Apply(z float64) float64 {
 
 func (s Softmax) ApplyMatrix(M Matrix[float64]) {
 	for j := 0; j < M.ColumnCount(); j++ {
+		// Find column max for numerical stability
+		maxVal := math.Inf(-1)
+		for i := 0; i < M.RowCount(); i++ {
+			z, _ := M.At(i, j)
+			if z > maxVal {
+				maxVal = z
+			}
+		}
+
 		exponents := make([]float64, M.RowCount())
 		sumExponents := float64(0.0)
 		for i := 0; i < M.RowCount(); i++ {
 			z, _ := M.At(i, j)
-			exponents[i] = math.Exp(z)
+			exponents[i] = math.Exp(z - maxVal)
 			sumExponents += exponents[i]
 		}
 		for i := 0; i < M.RowCount(); i++ {

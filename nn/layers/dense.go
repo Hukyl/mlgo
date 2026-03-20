@@ -113,9 +113,9 @@ func (d *dense) BackPropagate(nextLayerPropagation, X Matrix[float64], A [2]Matr
 	dAdZ := d.Activation().DerivativeMatrix(A[0]) // derivative for activation function
 
 	dLdZ, _ := nextLayerPropagation.MultiplyElementwise(dAdZ)
+	result, _ := d.Weights().T().Multiply(dLdZ)
 	d.updateWeights(dLdZ, X, parameters)
 
-	result, _ := d.Weights().T().Multiply(dLdZ)
 	return result
 }
 

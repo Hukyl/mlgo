@@ -55,7 +55,7 @@ func (d *dropout) ForwardPropagate(X Matrix[float64]) (Y [2]Matrix[float64], err
 				prob, _ := output.At(i, j)
 				if prob < keepProb {
 					v, _ := X.At(i, j)
-					output.Set(i, j, v)
+					output.Set(i, j, v/keepProb)
 				} else {
 					output.Set(i, j, 0.0)
 				}

@@ -166,7 +166,7 @@ func (n *nn) ComputeCost(yHat, Y Matrix[float64]) float64 {
 	losses := n.LossFunction.ApplyMatrix(Y, yHat)
 	for column := 0; column < losses.ColumnCount(); column++ {
 		for row := 0; row < losses.RowCount(); row++ {
-			v, _ := losses.At(column, row)
+			v, _ := losses.At(row, column)
 			cost += v
 		}
 	}
